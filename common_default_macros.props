@@ -5,8 +5,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Label="Configuration">
     <PlatformToolSet>$(DefaultPlatformToolset)</PlatformToolSet>
-    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
-    <IntDir>Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup />
   <ItemGroup />

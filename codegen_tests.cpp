@@ -96,25 +96,8 @@ extern "C" DLLEXPORT double printd(double X)
 // Main driver code.
 //===----------------------------------------------------------------------===//
 
-int main()
+void GenerateFunc_0()
 {
-	InitializeNativeTarget();
-	InitializeNativeTargetAsmPrinter();
-	InitializeNativeTargetAsmParser();
-
-	// Install standard binary operators.
-	// 1 is lowest precedence.
-	BinopPrecedence['='] = 2;
-	BinopPrecedence['<'] = 10;
-	BinopPrecedence['+'] = 20;
-	BinopPrecedence['-'] = 20;
-	BinopPrecedence['*'] = 40; // highest.
-
-
-	TheJIT = std::make_unique<shader_JIT>();
-
-	InitializeModuleAndPassManager();
-
 	// CODEGEN TESTS
 	std::vector<std::string> Args{"x"};
 	std::string Name{"main"};
@@ -184,7 +167,7 @@ int main()
 		retval = result;
 	}
 
-	//Value* RetVal = Body->codegen();
+	//	Value* RetVal = Body->codegen();
 
 	if (retval)
 	{
@@ -202,19 +185,150 @@ int main()
 	TheFunction->print(errs());
 	fprintf(stderr, "\n");
 	// ADD FUNCTION MODULE AND INIT NEW MODULE
+}
+
+void GenerateFunc_1()
+{
+	// CODEGEN TESTS
+	std::vector<std::string> Args{"x"};
+	std::string Name{"main"};
+
+	// CODEGEN PTOTOTYPE
+	std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext));
+	FunctionType* FT = FunctionType::get(Type::getDoubleTy(TheContext), Doubles, false);
+
+	Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
+
+	// Set names for all arguments.
+	unsigned Idx = 0;
+	for (auto& Arg : TheFunction->args())
+		Arg.setName(Args[Idx++]);
+
+	// CODEGEN FUNCTION
+	// Create a new basic block to start insertion into.
+	BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
+	Builder.SetInsertPoint(BB);
+
+	// Record the function arguments in the NamedValues map.
+	NamedValues.clear();
+	for (auto& Arg : TheFunction->args())
+	{
+		// Create an alloca for this variable.
+		AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName());
+
+		// Store the initial value into the alloca.
+		Builder.CreateStore(&Arg, Alloca);
+
+		// Add arguments to variable symbol table.
+		NamedValues[Arg.getName()] = Alloca;
+	}
+	std::vector<std::string> VarNames{"x", "y"};
+	{
+		std::string VarName = VarNames[0];
+		auto InitVarName    = Args[0];
+		Value* InitAlloca   = NamedValues[InitVarName];
+		Value* InitVal      = Builder.CreateLoad(InitAlloca, InitVarName.c_str());
+		AllocaInst* Alloca  = CreateEntryBlockAlloca(TheFunction, VarName);
+		// INIT VARIBALE
+		Builder.CreateStore(InitVal, Alloca);
+		// Remember this binding.
+		NamedValues[VarName] = Alloca;
+		Value* V             = NamedValues[VarName];
+		Value* LHS           = Builder.CreateLoad(V, VarName.c_str());
+		Value* RHS           = ConstantFP::get(TheContext, APFloat(5.0));
+		Value* result        = Builder.CreateFAdd(LHS, RHS, "addtmp");
+		Builder.CreateStore(result, Alloca);
+	}
+
+	Value* retval;
+	{
+		std::string VarName = VarNames[1];
+		Value* InitVal      = ConstantFP::get(TheContext, APFloat(2.0));
+		AllocaInst* Alloca  = CreateEntryBlockAlloca(TheFunction, VarName);
+		// INIT VARIBALE
+		Builder.CreateStore(InitVal, Alloca);
+		// Remember this binding.
+		NamedValues[VarName] = Alloca;
+		Value* V             = NamedValues[VarName];
+		Value* LHS           = Builder.CreateLoad(V, VarName.c_str());
+		Value* V_rhs         = NamedValues[VarNames[0]];
+		Value* RHS           = Builder.CreateLoad(V_rhs, VarNames[0].c_str());
+		Value* result        = Builder.CreateFAdd(LHS, RHS, "addtmp");
+		Builder.CreateStore(result, Alloca);
+		retval = result;
+	}
+
+	//	Value* RetVal = Body->codegen();
+
+	if (retval)
+	{
+		// Finish off the function.
+		Builder.CreateRet(retval);
+
+		// Validate the generated code, checking for consistency.
+		verifyFunction(*TheFunction);
+
+		// Run the optimizer on the function.
+		TheFPM->run(*TheFunction);
+	}
+
+	fprintf(stderr, "Read function definition:");
+	TheFunction->print(errs());
+	fprintf(stderr, "\n");
+	// ADD FUNCTION MODULE AND INIT NEW MODULE
+}
+
+int main()
+{
+	InitializeNativeTarget();
+	InitializeNativeTargetAsmPrinter();
+	InitializeNativeTargetAsmParser();
+
+	// Install standard binary operators.
+	// 1 is lowest precedence.
+	BinopPrecedence['='] = 2;
+	BinopPrecedence['<'] = 10;
+	BinopPrecedence['+'] = 20;
+	BinopPrecedence['-'] = 20;
+	BinopPrecedence['*'] = 40; // highest.
+
+
+	TheJIT = std::make_unique<shader_JIT>();
+
+	InitializeModuleAndPassManager();
+
+	GenerateFunc_0();
+
 	TheJIT->addModule(std::move(TheModule));
 	InitializeModuleAndPassManager();
 
 	// CALL FUNCTIONSIN CPP
-	auto ExprSymbol = TheJIT->findSymbol(Name);
+	auto ExprSymbol = TheJIT->findSymbol("main");
 	assert(ExprSymbol && "Function not found");
 
 	// Get the symbol's address and cast it to the right type (takes no
 	// arguments, returns a double) so we can call it as a native function.
 	double (*FP)(double a) = (double (*)(double a))(intptr_t)cantFail(ExprSymbol.getAddress());
+
+
+	InitializeModuleAndPassManager();
+
+	GenerateFunc_1();
+
+	TheJIT->addModule(std::move(TheModule));
+	InitializeModuleAndPassManager();
+
+	// CALL FUNCTIONSIN CPP
+	ExprSymbol = TheJIT->findSymbol("main");
+	assert(ExprSymbol && "Function not found");
+
+	double (*FP_)(double a) = (double (*)(double a))(intptr_t)cantFail(ExprSymbol.getAddress());
 	fprintf(stderr, "Evaluated to %f\n", FP(2));
-	auto t = FP(0);
+	auto t  = FP(0);
 	auto t1 = FP(5);
+	fprintf(stderr, "Evaluated to %f\n", FP_(2));
+	t  = FP_(0);
+	t1 = FP_(5);
 
 
 	// Beware: exiting in debug mode triggers assert.

@@ -59,5 +59,6 @@
 #include <string>
 #include <vector>
 #include <charconv>
+#include <list>
 
 #endif //PCH_H

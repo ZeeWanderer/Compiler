@@ -1,5 +1,12 @@
 // Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+// TODO: parse funnction arg types
+// TODO: More operators
+// TODO: 1+ char length operators
+// TODO: Branching: if-else,for loop;
+// TODO: 1+ char length operators
+// TODO: Actully use types(Cast, conversion etc.)
+// TODO: convert to OOP in mpsl image.
 
 #include "pch.h"
 #include "JIT.h"

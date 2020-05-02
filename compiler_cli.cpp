@@ -7,6 +7,8 @@
 // TODO: 1+ char length operators
 // TODO: Actully use types(Cast, conversion etc.)
 // TODO: convert to OOP in mpsl image.
+// TODO: layout as in mpsl
+// TODO: remove delayed jit
 
 #include "pch.h"
 #include "JIT.h"

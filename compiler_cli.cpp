@@ -907,6 +907,10 @@ Value* BinaryExprAST::codegen()
 		L = Builder.CreateFCmpULT(L, R, "cmptmp");
 		// Convert bool 0/1 to double 0.0 or 1.0
 		return Builder.CreateUIToFP(L, Type::getDoubleTy(TheContext), "booltmp");
+	case '>':
+		L = Builder.CreateFCmpUGT(L, R, "cmptmp");
+		// Convert bool 0/1 to double 0.0 or 1.0
+		return Builder.CreateUIToFP(L, Type::getDoubleTy(TheContext), "booltmp");
 	default: break;
 	}
 
@@ -1397,6 +1401,7 @@ int main()
 	// 1 is lowest precedence.
 	BinopPrecedence['='] = 2;
 	BinopPrecedence['<'] = 10;
+	BinopPrecedence['>'] = 10;
 	BinopPrecedence['+'] = 20;
 	BinopPrecedence['-'] = 20;
 	BinopPrecedence['*'] = 40; // highest.
@@ -1413,11 +1418,17 @@ double main()
 }
 )";
 
-	// Prime the first token.
-	fprintf(stderr, "ready> ");
+	
+
 	getNextToken();
-	// Run the main "interpreter loop" now.
+	
 	MainLoop();
+	
+	auto ExprSymbol = TheJIT->findSymbol("main");
+	assert(ExprSymbol && "Function not found");
+
+	double (*FP)() = (double (*)())(intptr_t)cantFail(ExprSymbol.getAddress());
+	fprintf(stderr, "Evaluated to %f\n", FP());
 
 	return 0;
 }

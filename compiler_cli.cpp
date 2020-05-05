@@ -83,7 +83,7 @@ static int gettok()
 			return tok_type;
 		}
 			
-
+		// COMMANDS
 		if (IdentifierStr == "extern")
 			return tok_extern;
 		if (IdentifierStr == "if")
@@ -1423,7 +1423,6 @@ double main()
 	getNextToken();
 	
 	MainLoop();
-	
 	auto ExprSymbol = TheJIT->findSymbol("main");
 	assert(ExprSymbol && "Function not found");
 

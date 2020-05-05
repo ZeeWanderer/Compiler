@@ -52,6 +52,11 @@ namespace llvm
 				return findMangledSymbol(mangle(Name));
 			}
 
+			JITSymbol findSymbol(const std::string Name, VModuleKey Module)
+			{
+				return findMangledSymbol(mangle(Name), Module);
+			}
+
 		private:
 			std::string mangle(const std::string& Name)
 			{
@@ -61,6 +66,39 @@ namespace llvm
 					Mangler::getNameWithPrefix(MangledNameStream, Name, DL);
 				}
 				return MangledName;
+			}
+
+			JITSymbol findMangledSymbol(const std::string& Name, VModuleKey Module)
+			{
+#ifdef _WIN32
+				// The symbol lookup of ObjectLinkingLayer uses the SymbolRef::SF_Exported
+				// flag to decide whether a symbol will be visible or not, when we call
+				// IRCompileLayer::findSymbolIn with ExportedSymbolsOnly set to true.
+				//
+				// But for Windows COFF objects, this flag is currently never set.
+				// For a potential solution see: https://reviews.llvm.org/rL258665
+				// For now, we allow non-exported symbols on Windows as a workaround.
+				const bool ExportedSymbolsOnly = false;
+#else
+				const bool ExportedSymbolsOnly = true;
+#endif
+				// Search provided module
+				if (auto Sym = CompileLayer.findSymbolIn(Module, Name, ExportedSymbolsOnly))
+					return Sym;
+				// If we can't find the symbol in the JIT, try looking in the host process.
+				if (auto SymAddr = RTDyldMemoryManager::getSymbolAddressInProcess(Name))
+					return JITSymbol(SymAddr, JITSymbolFlags::Exported);
+
+#ifdef _WIN32
+				// For Windows retry without "_" at beginning, as RTDyldMemoryManager uses
+				// GetProcAddress and standard libraries like msvcrt.dll use names
+				// with and without "_" (for example "_itoa" but "sin").
+				if (Name.length() > 2 && Name[0] == '_')
+					if (auto SymAddr = RTDyldMemoryManager::getSymbolAddressInProcess(Name.substr(1)))
+						return JITSymbol(SymAddr, JITSymbolFlags::Exported);
+#endif
+
+				return nullptr;
 			}
 
 			JITSymbol findMangledSymbol(const std::string& Name)

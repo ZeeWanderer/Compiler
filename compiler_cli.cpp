@@ -40,96 +40,120 @@ enum Token:int
 	tok_for  = -9,
 };
 
-static std::string IdentifierStr; // Filled in if tok_identifier
-static std::string TypeIdentifierStr; // Filled in if tok_type
-static double NumVal;             // Filled in if tok_number
-static std::string source_code;
-
-
-
-static int _getchar()
+class Tokenizer
 {
-	static size_t idx = 0;
-	if (idx < source_code.size())
+private:
+	std::string IdentifierStr;     // Filled in if tok_identifier
+	std::string TypeIdentifierStr; // Filled in if tok_type
+	double NumVal;                 // Filled in if tok_number
+	std::string_view source_code;
+
+	int _getchar()
 	{
-		return source_code[idx++];
-	}
-	else
-	{
-		return EOF;
-	}
-
-}
-char ThisChar_g;
-    /// gettok - Return the next token from standard input.
-static int gettok()
-{
-	static int LastChar = ' ';
-
-	// Skip any whitespace.
-	while (isspace(LastChar))
-		LastChar = _getchar();
-
-	if (isalpha(LastChar))
-	{ // identifier: [a-zA-Z][a-zA-Z0-9]*
-		IdentifierStr = LastChar;
-		while (isalnum((LastChar = _getchar())))
-			IdentifierStr += LastChar;
-
-		// BASIC TYPES
-		if (IdentifierStr == "double")
+		static size_t source_idx = 0;
+		if (source_idx < source_code.size())
 		{
-			TypeIdentifierStr = IdentifierStr;
-			return tok_type;
+			return source_code[source_idx++];
 		}
-			
-		// COMMANDS
-		if (IdentifierStr == "extern")
-			return tok_extern;
-		if (IdentifierStr == "if")
-			return tok_if;
-		if (IdentifierStr == "else")
-			return tok_else;
-		if (IdentifierStr == "for")
-			return tok_for;
-		return tok_identifier;
-	}
-
-	if (isdigit(LastChar) || LastChar == '.')
-	{ // Number: [0-9.]+
-		std::string NumStr;
-		do
+		else
 		{
-			NumStr += LastChar;
-			LastChar = _getchar();
-		} while (isdigit(LastChar) || LastChar == '.');
-
-		//NumVal = strtod(NumStr.c_str(), nullptr);
-		std::from_chars(NumStr.c_str(), NumStr.c_str() + NumStr.size(), NumVal);
-		return tok_number;
+			return EOF;
+		}
 	}
 
-	if (LastChar == '#')
+	int LastChar = ' ';
+	/// gettok - Return the next token from standard input.
+public:
+	void set_source(std::string_view source)
 	{
-		// Comment until end of line.
-		do
-			LastChar = _getchar();
-		while (LastChar != EOF && LastChar != '\n' && LastChar != '\r');
-
-		if (LastChar != EOF)
-			return gettok();
+		this->source_code = source;
 	}
 
-	// Check for end of file.  Don't eat the EOF.
-	if (LastChar == EOF)
-		return tok_eof;
+	int gettok()
+	{
 
-	// Otherwise, just return the character as its ascii value.
-	int ThisChar = LastChar;
-	LastChar     = _getchar();
-	ThisChar_g     = ThisChar;
-	return ThisChar;
-}
+		// Skip any whitespace.
+		while (isspace(LastChar))
+			LastChar = _getchar();
+
+		if (isalpha(LastChar))
+		{ // identifier: [a-zA-Z][a-zA-Z0-9]*
+			IdentifierStr = LastChar;
+			while (isalnum((LastChar = _getchar())))
+				IdentifierStr += LastChar;
+
+			// BASIC TYPES
+			if (IdentifierStr == "double")
+			{
+				TypeIdentifierStr = IdentifierStr;
+				return tok_type;
+			}
+
+			// COMMANDS
+			if (IdentifierStr == "extern")
+				return tok_extern;
+			if (IdentifierStr == "if")
+				return tok_if;
+			if (IdentifierStr == "else")
+				return tok_else;
+			if (IdentifierStr == "for")
+				return tok_for;
+			return tok_identifier;
+		}
+
+		if (isdigit(LastChar) || LastChar == '.')
+		{ // Number: [0-9.]+
+			std::string NumStr;
+			do
+			{
+				NumStr += LastChar;
+				LastChar = _getchar();
+			} while (isdigit(LastChar) || LastChar == '.');
+
+			//	NumVal = strtod(NumStr.c_str(), nullptr);
+			std::from_chars(NumStr.c_str(), NumStr.c_str() + NumStr.size(), NumVal);
+			return tok_number;
+		}
+
+		if (LastChar == '#')
+		{
+			// Comment until end of line.
+			do
+				LastChar = _getchar();
+			while (LastChar != EOF && LastChar != '\n' && LastChar != '\r');
+
+			if (LastChar != EOF)
+				return gettok();
+		}
+
+		// Check for end of file.  Don't eat the EOF.
+		if (LastChar == EOF)
+			return tok_eof;
+
+		// Otherwise, just return the character as its ascii value.
+		int ThisChar = LastChar;
+		LastChar     = _getchar();
+		return ThisChar;
+	}
+
+	std::string get_identifier()
+	{
+		return IdentifierStr;
+	}
+
+	std::string get_type_identifier()
+	{
+		return TypeIdentifierStr;
+	}
+
+	double get_double_val()
+	{
+		return NumVal;
+	}
+
+
+}m_tokenizer;
+
 
 //===----------------------------------------------------------------------===//
 // Abstract Syntax Tree (aka Parse Tree)
@@ -368,7 +392,7 @@ namespace
 static int CurTok;
 static int getNextToken()
 {
-	return CurTok = gettok();
+	return CurTok = m_tokenizer.gettok();
 }
 
 /// BinopPrecedence - This holds the precedence for each binary operator that is
@@ -418,7 +442,7 @@ static std::unique_ptr<ExprAST> ParseExpression();
 /// numberexpr ::= number
 static std::unique_ptr<ExprAST> ParseNumberExpr()
 {
-	auto Result = std::make_unique<NumberExprAST>(NumVal);
+	auto Result = std::make_unique<NumberExprAST>(m_tokenizer.get_double_val());
 	getNextToken(); // consume the number
 	return std::move(Result);
 }
@@ -442,7 +466,7 @@ static std::unique_ptr<ExprAST> ParseParenExpr()
 ///   ::= identifier '(' expression* ')'
 static std::unique_ptr<ExprAST> ParseIdentifierExpr()
 {
-	std::string IdName = IdentifierStr;
+	auto IdName = m_tokenizer.get_identifier();
 
 	getNextToken(); // eat identifier.
 
@@ -575,7 +599,7 @@ static std::unique_ptr<ExprAST> ParseVarExpr()
 
 	while (true)
 	{
-		std::string Name = IdentifierStr;
+		auto Name = m_tokenizer.get_identifier();
 		getNextToken(); // eat identifier.
 
 		// Read the optional initializer.
@@ -729,7 +753,7 @@ static std::unique_ptr<PrototypeAST> ParsePrototype()
 	{
 	default: return LogErrorP("Expected function name in prototype");
 	case tok_identifier:
-		FnName = IdentifierStr;
+		FnName = m_tokenizer.get_identifier();
 		Kind   = 0;
 		getNextToken();
 		break;
@@ -740,7 +764,7 @@ static std::unique_ptr<PrototypeAST> ParsePrototype()
 
 	std::vector<std::string> ArgNames;
 	while (getNextToken() == tok_identifier)
-		ArgNames.push_back(IdentifierStr);
+		ArgNames.push_back(m_tokenizer.get_identifier());
 	if (CurTok != ')')
 		return LogErrorP("Expected ')' in prototype");
 
@@ -1410,15 +1434,14 @@ int main()
 
 	InitializeModuleAndPassManager();
 
-	source_code = R"(
+	std::string source_code = R"(
 double main()
 {
 	double x = 5;
 	return x+1;
 }
 )";
-
-	
+	m_tokenizer.set_source(source_code);
 
 	getNextToken();
 	

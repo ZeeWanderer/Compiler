@@ -319,7 +319,7 @@ namespace
 	/// PrototypeAST - This class represents the "prototype" for a function,
 	/// which captures its name, and its argument names (thus implicitly the number
 	/// of arguments the function takes), as well as if it is an operator.
-	class PrototypeAST
+	class PrototypeAST : public ExprAST
 	{
 		std::string Name;
 		std::vector<std::string> Args;
@@ -335,7 +335,8 @@ namespace
 		{
 		}
 
-		Function* codegen();
+		// Cast to Function*
+		Value* codegen();
 		const std::string& getName() const
 		{
 			return Name;
@@ -364,7 +365,7 @@ namespace
 
 	typedef std::list<std::unique_ptr<ExprAST>> ExprList;
 	/// FunctionAST - This class represents a function definition itself.
-	class FunctionAST
+	class FunctionAST : public ExprAST
 	{
 		std::unique_ptr<PrototypeAST> Proto;
 		ExprList Body;
@@ -376,7 +377,8 @@ namespace
 		{
 		}
 
-		Function* codegen();
+		// Cast to Function*
+		Value* codegen();
 	};
 
 
@@ -979,7 +981,7 @@ Function* getFunction(std::string Name)
 	// prototype.
 	auto FI = FunctionProtos.find(Name);
 	if (FI != FunctionProtos.end())
-		return FI->second->codegen();
+		return static_cast<Function*>(FI->second->codegen());
 
 	// If no existing prototype exists, return null.
 	return nullptr;
@@ -1308,7 +1310,8 @@ Value* VarExprAST::codegen()
 	return retval;
 }
 
-Function* PrototypeAST::codegen()
+// Cast to Function*
+Value* PrototypeAST::codegen()
 {
 	// Make the function type:  double(double,double) etc.
 	std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext));
@@ -1336,7 +1339,8 @@ Value* ReturnExprAST::codegen()
 	return nullptr;
 }
 
-Function* FunctionAST::codegen()
+// Cast to Function*
+Value* FunctionAST::codegen()
 {
 	// Transfer ownership of the prototype to the FunctionProtos map, but keep a
 	// reference to it for use below.
@@ -1495,7 +1499,7 @@ double main()
 
 	for (auto it = prototypes.begin(); it != prototypes.end(); ++it)
 	{
-		if (auto* FnIR = (*it)->codegen())
+		if (auto* FnIR = static_cast<Function*>((*it)->codegen()))
 		{
 			fprintf(stderr, "Read extern: ");
 			FnIR->print(errs());
@@ -1506,7 +1510,7 @@ double main()
 
 	for (auto it = functions.begin(); it != functions.end(); ++it)
 	{
-		if (auto* FnIR = (*it)->codegen())
+		if (auto* FnIR = static_cast<Function*>((*it)->codegen()))
 		{
 			fprintf(stderr, "Read function definition:");
 			FnIR->print(errs());

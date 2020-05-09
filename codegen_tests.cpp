@@ -451,8 +451,8 @@ int main()
 	TheJIT->addModule(std::move(TheModule));
 	InitializeModuleAndPassManager();
 
-	//auto ExprSymbol_gptr = TheJIT->findSymbol("global_x_ptr");
-	//assert(ExprSymbol_gptr && "Function not found");
+	auto ExprSymbol_gptr = TheJIT->findSymbol("global_x_ptr");
+	assert(ExprSymbol_gptr && "Function not found");
 
 	auto ExprSymbol_ptr = TheJIT->findSymbol("loader");
 	assert(ExprSymbol_ptr && "Function not found");
@@ -468,6 +468,12 @@ int main()
 
 	__int32 (*_FP__get_global)() = (__int32 (*)())(intptr_t)cantFail(ExprSymbol_get_global_ptr.getAddress());
 	auto t_fp_global_ptr                = _FP__get_global();
+
+	auto global_x_ptr = (_int32*)cantFail(ExprSymbol_gptr.getAddress());
+
+	*global_x_ptr = 4;
+
+	t_fp_global_ptr = _FP__get_global();
 
 	// Beware: exiting in debug mode triggers assert.
 	return 0;

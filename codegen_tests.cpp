@@ -301,7 +301,7 @@ void GenerateFunc_2()
 		std::string Name{"loader"};
 
 		// CODEGEN PTOTOTYPE
-		std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext)->getPointerTo());
+		std::vector<Type*> Doubles(Args.size(), Type::getInt8Ty(TheContext)->getPointerTo());
 		FunctionType* FT = FunctionType::get(Type::getInt32Ty(TheContext), Doubles, false);
 
 		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
@@ -316,13 +316,20 @@ void GenerateFunc_2()
 		BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
 		Builder.SetInsertPoint(BB);
 
+		// Get pointer to first argument
 		Value* Base = TheFunction->arg_begin();
-		Value* Base_int = Builder.CreateBitCast(Base, Builder.getInt32Ty()->getPointerTo());
 
-		Value* gep = Builder.CreateGEP(Builder.getInt32Ty(), Base_int, Builder.getInt32(2), "a1");
-		//Value* gep_int = Builder.CreateBitCast(gep, Builder.getDoubleTy()->getPointerTo());
+		//Value* Base_int = Builder.CreateBitCast(Base, Builder.getInt32Ty()->getPointerTo());
+		//PointerType::get(Builder.getInt8Ty()->getPointerTo(), 0);
+
+		// Get __int8* pointer Offset by Builder.getInt32(8) from Base
+		Value* gep = Builder.CreateGEP(Builder.getInt8Ty(), Base, Builder.getInt32(8), "a1");
+		// no-op bitcast from __int8* to __int32*
+		Value* gep_int = Builder.CreateBitCast(gep, Builder.getInt32Ty()->getPointerTo());
 		//gep_int->dump();
-		Value* load = Builder.CreateLoad(gep, "a1");
+		//Load __int32 from pointer
+		Value* load = Builder.CreateLoad(gep_int, "a1");
+		// Store loaded value in global
 		Builder.CreateStore(load, gVar);
 
 		Value* retval = Builder.CreateLoad(gVar);
@@ -341,6 +348,44 @@ void GenerateFunc_2()
 			//TheFPM->run(*TheFunction);
 		}
 
+	}
+
+	{
+		// CODEGEN TESTS
+		std::vector<std::string> Args{};
+		std::string Name{"get_global"};
+
+		// CODEGEN PTOTOTYPE
+		std::vector<Type*> Doubles(Args.size(), Type::getInt8Ty(TheContext)->getPointerTo());
+		FunctionType* FT = FunctionType::get(Type::getInt32Ty(TheContext), Doubles, false);
+
+		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
+
+		// Set names for all arguments.
+		unsigned Idx = 0;
+		for (auto& Arg : TheFunction->args())
+			Arg.setName(Args[Idx++]);
+
+		// CODEGEN FUNCTION
+		// Create a new basic block to start insertion into.
+		BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
+		Builder.SetInsertPoint(BB);
+
+		Value* retval = Builder.CreateLoad(gVar);
+
+		//	Value* RetVal = Body->codegen();
+
+		if (retval)
+		{
+			// Finish off the function.
+			Builder.CreateRet(retval);
+
+			// Validate the generated code, checking for consistency.
+			verifyFunction(*TheFunction);
+
+			// Run the optimizer on the function.
+			//	TheFPM->run(*TheFunction);
+		}
 	}
 
 
@@ -415,8 +460,14 @@ int main()
 	data_test d{1, 2};
 	//auto* tmp                = &d; 
 	//auto tmp__               = reinterpret_cast<double*>(tmp);
-	__int32 (*_FP__ptr)(double* base_ptr) = (__int32 (*)(double* base_ptr))(intptr_t)cantFail(ExprSymbol_ptr.getAddress());
-	auto t_fp_ptr                                    = _FP__ptr(reinterpret_cast<double*>(&d));
+	__int32 (*_FP__ptr)(__int8* base_ptr) = (__int32 (*)(__int8* base_ptr))(intptr_t)cantFail(ExprSymbol_ptr.getAddress());
+	auto t_fp_ptr                         = _FP__ptr(reinterpret_cast<__int8*>(&d));
+
+	auto ExprSymbol_get_global_ptr = TheJIT->findSymbol("get_global");
+	assert(ExprSymbol_get_global_ptr && "Function not found");
+
+	__int32 (*_FP__get_global)() = (__int32 (*)())(intptr_t)cantFail(ExprSymbol_get_global_ptr.getAddress());
+	auto t_fp_global_ptr                = _FP__get_global();
 
 	// Beware: exiting in debug mode triggers assert.
 	return 0;

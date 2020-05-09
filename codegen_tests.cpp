@@ -288,9 +288,11 @@ struct data_test
 void GenerateFunc_2()
 {
 	std::string Globalname = "global_x_ptr";
-	TheModule->getOrInsertGlobal(Globalname, Type::getDoubleTy(TheContext));
+	TheModule->getOrInsertGlobal(Globalname, Type::getInt32Ty(TheContext));
 	GlobalVariable* gVar = TheModule->getNamedGlobal(Globalname);
 	gVar->setLinkage(GlobalValue::ExternalLinkage);
+	gVar->setInitializer(ConstantInt::get(TheContext, APInt(32, 0)));
+	//auto const_ = gVar->isConstant();
 	//gVar->setAlignment(4);
 
 	{
@@ -300,7 +302,7 @@ void GenerateFunc_2()
 
 		// CODEGEN PTOTOTYPE
 		std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext)->getPointerTo());
-		FunctionType* FT = FunctionType::get(Type::getDoubleTy(TheContext), Doubles, false);
+		FunctionType* FT = FunctionType::get(Type::getInt32Ty(TheContext), Doubles, false);
 
 		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
 
@@ -315,8 +317,11 @@ void GenerateFunc_2()
 		Builder.SetInsertPoint(BB);
 
 		Value* Base = TheFunction->arg_begin();
+		Value* Base_int = Builder.CreateBitCast(Base, Builder.getInt32Ty()->getPointerTo());
 
-		Value* gep  = Builder.CreateGEP(Builder.getDoubleTy(), Base, Builder.getInt32(0), "a1");
+		Value* gep = Builder.CreateGEP(Builder.getInt32Ty(), Base_int, Builder.getInt32(2), "a1");
+		//Value* gep_int = Builder.CreateBitCast(gep, Builder.getDoubleTy()->getPointerTo());
+		//gep_int->dump();
 		Value* load = Builder.CreateLoad(gep, "a1");
 		Builder.CreateStore(load, gVar);
 
@@ -401,14 +406,17 @@ int main()
 	TheJIT->addModule(std::move(TheModule));
 	InitializeModuleAndPassManager();
 
+	//auto ExprSymbol_gptr = TheJIT->findSymbol("global_x_ptr");
+	//assert(ExprSymbol_gptr && "Function not found");
+
 	auto ExprSymbol_ptr = TheJIT->findSymbol("loader");
 	assert(ExprSymbol_ptr && "Function not found");
 
 	data_test d{1, 2};
 	//auto* tmp                = &d; 
 	//auto tmp__               = reinterpret_cast<double*>(tmp);
-	double (*_FP__ptr)(double* base_ptr) = (double (*)(double* base_ptr))(intptr_t)cantFail(ExprSymbol_ptr.getAddress());
-	t                                    = _FP__ptr(reinterpret_cast<double*>(&d));
+	__int32 (*_FP__ptr)(double* base_ptr) = (__int32 (*)(double* base_ptr))(intptr_t)cantFail(ExprSymbol_ptr.getAddress());
+	auto t_fp_ptr                                    = _FP__ptr(reinterpret_cast<double*>(&d));
 
 	// Beware: exiting in debug mode triggers assert.
 	return 0;

@@ -22,10 +22,10 @@ static std::unique_ptr<shader_JIT> TheJIT;
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
-static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const std::string& VarName)
+static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const std::string& VarName, llvm::Type* type = Type::getDoubleTy(TheContext))
 {
 	IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-	return TmpB.CreateAlloca(Type::getDoubleTy(TheContext), nullptr, VarName);
+	return TmpB.CreateAlloca(type, nullptr, VarName);
 }
 
 Function* getFunction(std::string Name)

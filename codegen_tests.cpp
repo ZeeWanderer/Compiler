@@ -280,66 +280,67 @@ void GenerateFunc_1()
 
 struct data_test
 {
-	__int32 a;
 	double b;
+	__int32 a;
+	
 };
 
-//void GenerateFunc_2()
-//{
-//	std::string Globalname = "global_x_ptr";
-//	TheModule->getOrInsertGlobal(Globalname, Type::getDoubleTy(TheContext)->getPointerTo());
-//	GlobalVariable* gVar = TheModule->getNamedGlobal(Globalname);
-//	gVar->setLinkage(GlobalValue::CommonLinkage);
-//	//gVar->setAlignment(4);
-//
-//	{
-//		// CODEGEN TESTS
-//		std::vector<std::string> Args{"base_ptr"};
-//		std::string Name{"loader"};
-//
-//		// CODEGEN PTOTOTYPE
-//		std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext)->getPointerTo());
-//		FunctionType* FT = FunctionType::get(Type::getDoubleTy(TheContext), Doubles, false);
-//
-//		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
-//
-//		// Set names for all arguments.
-//		unsigned Idx = 0;
-//		for (auto& Arg : TheFunction->args())
-//			Arg.setName(Args[Idx++]);
-//
-//		// CODEGEN FUNCTION
-//		// Create a new basic block to start insertion into.
-//		BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
-//		Builder.SetInsertPoint(BB);
-//
-//		Value* Base = TheFunction->arg_begin();
-//
-//		Value* gep  = Builder.CreateGEP(Builder.getDoubleTy(), Base, Builder.getInt8(4), "a1");
-//		Value* load = Builder.CreateLoad(gep, "a1");
-//		Builder.CreateStore(load, gVar);
-//
-//		Value* retval = Builder.CreateLoad(gVar);
-//
-//		//	Value* RetVal = Body->codegen();
-//
-//		if (retval)
-//		{
-//			// Finish off the function.
-//			Builder.CreateRet(retval);
-//
-//			// Validate the generated code, checking for consistency.
-//			verifyFunction(*TheFunction);
-//
-//			// Run the optimizer on the function.
-//			TheFPM->run(*TheFunction);
-//		}
-//
-//	}
-//
-//
-//	return;
-//}
+void GenerateFunc_2()
+{
+	std::string Globalname = "global_x_ptr";
+	TheModule->getOrInsertGlobal(Globalname, Type::getDoubleTy(TheContext));
+	GlobalVariable* gVar = TheModule->getNamedGlobal(Globalname);
+	gVar->setLinkage(GlobalValue::ExternalLinkage);
+	//gVar->setAlignment(4);
+
+	{
+		// CODEGEN TESTS
+		std::vector<std::string> Args{"base_ptr"};
+		std::string Name{"loader"};
+
+		// CODEGEN PTOTOTYPE
+		std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext)->getPointerTo());
+		FunctionType* FT = FunctionType::get(Type::getDoubleTy(TheContext), Doubles, false);
+
+		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
+
+		// Set names for all arguments.
+		unsigned Idx = 0;
+		for (auto& Arg : TheFunction->args())
+			Arg.setName(Args[Idx++]);
+
+		// CODEGEN FUNCTION
+		// Create a new basic block to start insertion into.
+		BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
+		Builder.SetInsertPoint(BB);
+
+		Value* Base = TheFunction->arg_begin();
+
+		Value* gep  = Builder.CreateGEP(Builder.getDoubleTy(), Base, Builder.getInt32(0), "a1");
+		Value* load = Builder.CreateLoad(gep, "a1");
+		Builder.CreateStore(load, gVar);
+
+		Value* retval = Builder.CreateLoad(gVar);
+
+		//	Value* RetVal = Body->codegen();
+
+		if (retval)
+		{
+			// Finish off the function.
+			Builder.CreateRet(retval);
+
+			// Validate the generated code, checking for consistency.
+			verifyFunction(*TheFunction);
+
+			// Run the optimizer on the function.
+			//TheFPM->run(*TheFunction);
+		}
+
+	}
+
+
+	return;
+}
 
 int main()
 {
@@ -393,22 +394,21 @@ int main()
 	t  = FP_(0);
 	t1 = FP_(5);
 
-	/*InitializeModuleAndPassManager();
-
-	GenerateFunc_2();
-
-	TheJIT->addModule(std::move(TheModule));
-	TheModule->dump();
 	InitializeModuleAndPassManager();
 
-	ExprSymbol = TheJIT->findSymbol("loader");
-	assert(ExprSymbol && "Function not found");
+	GenerateFunc_2();
+	TheModule->dump();
+	TheJIT->addModule(std::move(TheModule));
+	InitializeModuleAndPassManager();
+
+	auto ExprSymbol_ptr = TheJIT->findSymbol("loader");
+	assert(ExprSymbol_ptr && "Function not found");
 
 	data_test d{1, 2};
-	auto* tmp                = &d; 
-	auto tmp__               = reinterpret_cast<double*>(tmp);
-	double (*_FP_)(double*) = (double (*)(double*))(intptr_t)cantFail(ExprSymbol.getAddress());
-	t                        = _FP_(tmp__);*/
+	//auto* tmp                = &d; 
+	//auto tmp__               = reinterpret_cast<double*>(tmp);
+	double (*_FP__ptr)(double* base_ptr) = (double (*)(double* base_ptr))(intptr_t)cantFail(ExprSymbol_ptr.getAddress());
+	t                                    = _FP__ptr(reinterpret_cast<double*>(&d));
 
 	// Beware: exiting in debug mode triggers assert.
 	return 0;

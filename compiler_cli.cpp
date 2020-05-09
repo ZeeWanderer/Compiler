@@ -367,12 +367,12 @@ namespace
 	/// FunctionAST - This class represents a function definition itself.
 	class FunctionAST : public ExprAST
 	{
-		std::unique_ptr<PrototypeAST> Proto;
+		PrototypeAST& Proto;
 		ExprList Body;
 
 	public:
-		FunctionAST(std::unique_ptr<PrototypeAST> Proto, ExprList Body)
-		    : Proto(std::move(Proto))
+		FunctionAST(PrototypeAST& Proto, ExprList Body)
+		    : Proto(Proto)
 		    , Body(std::move(Body))
 		{
 		}
@@ -802,13 +802,21 @@ private:
 			return LogErrorP("Expected '(' in prototype");
 
 		std::vector<std::string> ArgNames;
-		while (getNextToken() == tok_identifier)
-			ArgNames.push_back(m_tokenizer.get_identifier());
+		while (getNextToken() == tok_type)
+		{
+			if (getNextToken() == tok_identifier)
+				ArgNames.push_back(m_tokenizer.get_identifier());
+			else
+				return LogErrorP("Expected identifier after type in prototype");
+		}
 		if (CurTok != ')')
 			return LogErrorP("Expected ')' in prototype");
 
 		// success.
 		getNextToken(); // eat ')'.
+
+		if (!Kind && FnName == "main" && ArgNames.size() != 0)
+			return LogErrorP("Invalid number of operands for main function");
 
 		// Verify right number of names for operator.
 		if (Kind && ArgNames.size() != Kind)
@@ -830,9 +838,12 @@ private:
 
 			auto E = ParseExpressionList();
 			if (!E.empty())
-				return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
-			LogErrorF("Empty function");
-			return nullptr;
+			{
+				auto& P = *Proto;
+				PrototypeAST_list.emplace_back(std::move(Proto));
+				return std::make_unique<FunctionAST>(P, std::move(E));
+			}
+			return LogErrorF("Empty function");
 		}
 		else
 		{
@@ -1342,17 +1353,13 @@ Value* ReturnExprAST::codegen()
 // Cast to Function*
 Value* FunctionAST::codegen()
 {
-	// Transfer ownership of the prototype to the FunctionProtos map, but keep a
-	// reference to it for use below.
-	auto& P                          = *Proto;
-	FunctionProtos[Proto->getName()] = std::move(Proto);
-	Function* TheFunction            = getFunction(P.getName());
+	Function* TheFunction            = getFunction(Proto.getName());
 	if (!TheFunction)
 		return nullptr;
 
 	// If this is an operator, install it.
-	if (P.isBinaryOp())
-		BinopPrecedence[P.getOperatorName()] = P.getBinaryPrecedence();
+	if (Proto.isBinaryOp())
+		BinopPrecedence[Proto.getOperatorName()] = Proto.getBinaryPrecedence();
 
 	// Create a new basic block to start insertion into.
 	BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
@@ -1380,8 +1387,8 @@ Value* FunctionAST::codegen()
 			// Error reading body, remove function.
 			TheFunction->eraseFromParent();
 
-			if (P.isBinaryOp())
-				BinopPrecedence.erase(P.getOperatorName());
+			if (Proto.isBinaryOp())
+				BinopPrecedence.erase(Proto.getOperatorName());
 			return nullptr;
 		}
 	}
@@ -1481,8 +1488,8 @@ int main()
 	InitializeModuleAndPassManager();
 
 	std::string source_code = R"(
-extern putchard(x);
-extern printd(x);
+extern putchard(double x);
+extern printd(double x);
 double main()
 {
 	double x = 5;
@@ -1501,7 +1508,7 @@ double main()
 	{
 		if (auto* FnIR = static_cast<Function*>((*it)->codegen()))
 		{
-			fprintf(stderr, "Read extern: ");
+			fprintf(stderr, "Read prototype: ");
 			FnIR->print(errs());
 			fprintf(stderr, "\n");
 			FunctionProtos[(*it)->getName()] = std::move((*it));

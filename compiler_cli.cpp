@@ -1067,7 +1067,7 @@ Value* BinaryExprAST::codegen()
 	Value* R = RHS->codegen();
 	if (!L || !R)
 		return nullptr;
-
+	
 	switch (Op)
 	{
 	case '+': return Builder.CreateFAdd(L, R, "addtmp");
@@ -1437,6 +1437,14 @@ static void InitializeModuleAndPassManager()
 	// Simplify the control flow graph (deleting unreachable blocks, etc).
 	TheFPM->add(createCFGSimplificationPass());
 
+	// TEST PASSES
+
+	TheFPM->add(createLoopVectorizePass());
+
+	TheFPM->add(createSLPVectorizerPass());
+
+	TheFPM->add(createLoadStoreVectorizerPass());
+
 	TheFPM->doInitialization();
 }
 
@@ -1492,11 +1500,13 @@ int main()
 	std::string source_code = R"(
 extern putchard(double x);
 extern printd(double x);
-double main()
+double main(double a1, double a2, double b1, double b2,)
 {
-	double x = 5;
-	printd(x);
-	return x+1;
+	double a = a1*(a1 + b1);
+	double b = a2*(a2 + b2);
+	double c = a1*(a1 + b1);
+	double d = a2*(a2 + b2);
+	return a+b+c+d;
 }
 )";
 	m_parser.set_source(source_code);
@@ -1532,8 +1542,8 @@ double main()
 	auto ExprSymbol = TheJIT->findSymbol("main");
 	assert(ExprSymbol && "Function not found");
 
-	double (*FP)() = (double (*)())(intptr_t)cantFail(ExprSymbol.getAddress());
-	fprintf(stderr, "Evaluated to %f\n", FP());
+	double (*FP)(double, double, double, double) = (double (*)(double, double, double, double))(intptr_t)cantFail(ExprSymbol.getAddress());
+	fprintf(stderr, "Evaluated to %f\n", FP(1,2,3,4));
 
 	return 0;
 }

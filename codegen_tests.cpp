@@ -53,6 +53,7 @@ static void InitializeModuleAndPassManager()
 	// Create a new pass manager attached to it.
 	TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
 
+	
 	// Promote allocas to registers.
 	TheFPM->add(createPromoteMemoryToRegisterPass());
 	// Do simple "peephole" optimizations and bit-twiddling optzns.
@@ -63,6 +64,12 @@ static void InitializeModuleAndPassManager()
 	TheFPM->add(createGVNPass());
 	// Simplify the control flow graph (deleting unreachable blocks, etc).
 	TheFPM->add(createCFGSimplificationPass());
+
+	TheFPM->add(createSLPVectorizerPass());
+
+	TheFPM->add(createLoadStoreVectorizerPass());
+
+	TheFPM->add(createLoopVectorizePass());
 
 	TheFPM->doInitialization();
 }
@@ -345,7 +352,7 @@ void GenerateFunc_2()
 			verifyFunction(*TheFunction);
 
 			// Run the optimizer on the function.
-			//TheFPM->run(*TheFunction);
+			TheFPM->run(*TheFunction);
 		}
 
 	}
@@ -384,7 +391,7 @@ void GenerateFunc_2()
 			verifyFunction(*TheFunction);
 
 			// Run the optimizer on the function.
-			//	TheFPM->run(*TheFunction);
+			TheFPM->run(*TheFunction);
 		}
 	}
 

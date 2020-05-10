@@ -815,8 +815,8 @@ private:
 		// success.
 		getNextToken(); // eat ')'.
 
-		if (!Kind && FnName == "main" && ArgNames.size() != 0)
-			return LogErrorP("Invalid number of operands for main function");
+		//if (!Kind && FnName == "main" && ArgNames.size() != 0)
+		//	return LogErrorP("Invalid number of operands for main function");
 
 		// Verify right number of names for operator.
 		if (Kind && ArgNames.size() != Kind)

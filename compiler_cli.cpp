@@ -808,6 +808,8 @@ private:
 				ArgNames.push_back(m_tokenizer.get_identifier());
 			else
 				return LogErrorP("Expected identifier after type in prototype");
+			if (getNextToken() != ',')
+				break;
 		}
 		if (CurTok != ')')
 			return LogErrorP("Expected ')' in prototype");

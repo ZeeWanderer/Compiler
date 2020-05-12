@@ -15,18 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="src/pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="compiler_cli.cpp">
+    <ClCompile Include="src/compiler_cli.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
+    <ClInclude Include="src/include/pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JIT.h">
+    <ClInclude Include="src/include/JIT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

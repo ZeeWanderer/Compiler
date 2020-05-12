@@ -112,15 +112,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="compiler_cli.cpp" />
-    <ClCompile Include="pch.cpp">
+    <ClCompile Include="src/compiler_cli.cpp" />
+    <ClCompile Include="src/pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="JIT.h" />
-    <ClInclude Include="pch.h" />
+    <ClInclude Include="src/include/JIT.h" />
+    <ClInclude Include="src/include/pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -29,13 +29,13 @@ namespace llvm
 	namespace orc
 	{
 
-		class shader_JIT
+		class ShaderJIT
 		{
 		public:
 			using ObjLayerT     = LegacyRTDyldObjectLinkingLayer;
 			using CompileLayerT = LegacyIRCompileLayer<ObjLayerT, SimpleCompiler>;
 
-			shader_JIT()
+			ShaderJIT()
 			    : Resolver(createLegacyLookupResolver(
 			          ES, [this](const std::string& Name) { return findMangledSymbol(Name); }, [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); }))
 			    , TM(EngineBuilder().selectTarget())

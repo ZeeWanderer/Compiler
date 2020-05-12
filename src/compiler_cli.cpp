@@ -43,7 +43,7 @@ enum Token:int
 
 class Tokenizer
 {
-private:
+protected:
 	std::string IdentifierStr;     // Filled in if tok_identifier
 	std::string TypeIdentifierStr; // Filled in if tok_type
 	double NumVal;                 // Filled in if tok_number
@@ -420,7 +420,7 @@ static std::map<char, int> BinopPrecedence;
 
 class Parser
 {
-private:
+protected:
 	std::list<std::unique_ptr<FunctionAST>> FunctionAST_list;
 	std::list<std::unique_ptr<PrototypeAST>> PrototypeAST_list;
 
@@ -462,7 +462,7 @@ public:
 		MainLoop();
 	}
 
-private:
+protected:
 
 	/// GetTokPrecedence - Get the precedence of the pending binary operator token.
 	int GetTokPrecedence()

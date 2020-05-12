@@ -54,12 +54,12 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)\llvm_build\include;$(SolutionDir)\llvm-project\llvm\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\src\include;$(SolutionDir)\llvm_build\include;$(SolutionDir)\llvm-project\llvm\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)llvm_build\$(Configuration)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\llvm_build\include;$(SolutionDir)\llvm-project\llvm\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\src\include;$(SolutionDir)\llvm_build\include;$(SolutionDir)\llvm-project\llvm\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)llvm_build\$(Configuration)\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>

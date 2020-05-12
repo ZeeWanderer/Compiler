@@ -757,7 +757,7 @@ static IRBuilder<> Builder(TheContext);
 static std::unique_ptr<Module> TheModule;
 static std::map<std::string, AllocaInst*> NamedValues;
 static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
-static std::unique_ptr<shader_JIT> TheJIT;
+static std::unique_ptr<ShaderJIT> TheJIT;
 static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 
 Value* LogErrorV(const char* Str)
@@ -1333,7 +1333,7 @@ int main()
 	fprintf(stderr, "ready> ");
 	getNextToken();
 
-	TheJIT = std::make_unique<shader_JIT>();
+	TheJIT = std::make_unique<ShaderJIT>();
 
 	InitializeModuleAndPassManager();
 

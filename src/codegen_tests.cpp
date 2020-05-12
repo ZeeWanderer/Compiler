@@ -18,7 +18,7 @@ static IRBuilder<> Builder(TheContext);
 static std::unique_ptr<Module> TheModule;
 static std::map<std::string, AllocaInst*> NamedValues;
 static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
-static std::unique_ptr<shader_JIT> TheJIT;
+static std::unique_ptr<ShaderJIT> TheJIT;
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
@@ -414,7 +414,7 @@ int main()
 	BinopPrecedence['*'] = 40; // highest.
 
 
-	TheJIT = std::make_unique<shader_JIT>();
+	TheJIT = std::make_unique<ShaderJIT>();
 
 	InitializeModuleAndPassManager();
 

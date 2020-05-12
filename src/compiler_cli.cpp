@@ -160,8 +160,8 @@ public:
 // Abstract Syntax Tree (aka Parse Tree)
 //===----------------------------------------------------------------------===//
 
-namespace
-{
+//namespace
+//{
 
 	/// ExprAST - Base class for all expression nodes.
 	class ExprAST
@@ -383,7 +383,7 @@ namespace
 
 
 
-} // end anonymous namespace
+//} // end anonymous namespace
 
 //===----------------------------------------------------------------------===//
 // Parser

@@ -43,9 +43,11 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="llvm_inc.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="llvm_inc.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Label="Configuration">
@@ -69,9 +71,6 @@
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING=1;_HAS_EXCEPTIONS=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4141;4146;4244;4267;4291;4345;4351;4456;4457;4458;4459;4503;4624;4722;4100;4127;4512;4505;4610;4510;4702;4245;4706;4310;4701;4703;4389;4611;4805;4204;4577;4091;4592;4319;4709;4324</DisableSpecificWarnings>
     </ClCompile>
-    <Link>
-      <AdditionalDependencies>LLVMAnalysis.lib;LLVMCore.lib;LLVMExecutionEngine.lib;LLVMInstCombine.lib;LLVMObject.lib;LLVMOrcJIT.lib;LLVMRuntimeDyld.lib;LLVMScalarOpts.lib;LLVMSupport.lib;LLVMTransformUtils.lib;LLVMX86CodeGen.lib;LLVMX86AsmParser.lib;LLVMX86Desc.lib;LLVMX86Disassembler.lib;LLVMX86Info.lib;LLVMX86Utils.lib;LLVMJITLink.lib;LLVMOrcError.lib;LLVMPasses.lib;LLVMipo.lib;LLVMInstrumentation.lib;LLVMVectorize.lib;LLVMIRReader.lib;LLVMAsmParser.lib;LLVMLinker.lib;LLVMAsmPrinter.lib;LLVMDebugInfoDWARF.lib;LLVMCFGuard.lib;LLVMGlobalISel.lib;LLVMSelectionDAG.lib;LLVMCodeGen.lib;LLVMAggressiveInstCombine.lib;LLVMTarget.lib;LLVMBitWriter.lib;LLVMProfileData.lib;LLVMBitReader.lib;LLVMRemarks.lib;LLVMBitstreamReader.lib;LLVMTextAPI.lib;LLVMMCParser.lib;LLVMMCDisassembler.lib;LLVMMC.lib;LLVMBinaryFormat.lib;LLVMDebugInfoCodeView.lib;LLVMDebugInfoMSF.lib;LLVMDemangle.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

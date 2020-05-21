@@ -166,6 +166,11 @@ class ExprAST
 public:
 	virtual ~ExprAST() = default;
 
+	virtual bool bExpectSemicolon()
+	{
+		return true;
+	}
+
 	virtual Value* codegen() = 0;
 };
 
@@ -280,6 +285,8 @@ public:
 		, Else(std::move(Else))
 	{
 	}
+
+	bool bExpectSemicolon() override;
 
 	Value* codegen() override;
 };
@@ -771,10 +778,13 @@ protected:
 		while (true)
 		{
 			auto retval = ParseExpression();
-			if (CurTok != ';')
-				return LogErrorEX("Expected ;");
+			if (retval->bExpectSemicolon())
+			{
+				if (CurTok != ';')
+					return LogErrorEX("Expected ;");
+				getNextToken(); // Eat ;
+			}
 			e_list.push_back(std::move(retval));
-			getNextToken(); // Eat ;
 			if (CurTok == '}')
 				break;
 		}
@@ -1123,6 +1133,11 @@ Value* CallExprAST::codegen()
 	return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
+bool IfExprAST::bExpectSemicolon()
+{
+	return false;
+}
+
 Value* IfExprAST::codegen()
 {
 	Value* CondV = Cond->codegen();
@@ -1422,7 +1437,7 @@ Value* FunctionAST::codegen()
 	verifyFunction(*TheFunction);
 
 	// Run the optimizer on the function.
-	//TheFPM->run(*TheFunction);
+	TheFPM->run(*TheFunction);
 
 	return TheFunction;
 	//}
@@ -1561,7 +1576,7 @@ double main(double a1, double a2, double b1, double b2,)
 	assert(ExprSymbol && "Function not found");
 
 	double (*FP)(double, double, double, double) = (double (*)(double, double, double, double))(intptr_t)cantFail(ExprSymbol.getAddress());
-	fprintf(stderr, "Evaluated to %f\n", FP(1, 2, 3, 4));
+	fprintf(stderr, "Evaluated to %f\n", FP(1, 1, -4, 4));
 
 	return 0;
 }

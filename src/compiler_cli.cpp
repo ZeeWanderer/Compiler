@@ -1451,31 +1451,24 @@ static void InitializeModuleAndPassManager()
 
 	// Create a new pass manager attached to it.
 	TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
-	
 
-	TheFPM->add(createLoopVectorizePass());
-
+	TheFPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
+	TheFPM->add(createCFGSimplificationPass());       //	Dead code elimination
+	TheFPM->add(createSROAPass());
 	TheFPM->add(createSLPVectorizerPass());
-
 	TheFPM->add(createLoadStoreVectorizerPass());
-
+	TheFPM->add(createLoopSimplifyCFGPass());
+	TheFPM->add(createLoopVectorizePass());
 	TheFPM->add(createLoopUnrollPass());
-
-	// Promote allocas to registers.
-	TheFPM->add(createPromoteMemoryToRegisterPass());
-	// Do simple "peephole" optimizations and bit-twiddling optzns.
-	TheFPM->add(createInstructionCombiningPass());
-	// Reassociate expressions.
-	TheFPM->add(createReassociatePass());
-	// Eliminate Common SubExpressions.
-	TheFPM->add(createGVNPass());
-
-	//TheFPM->add(createLoopIdiomPass());
-
-	// Simplify the control flow graph (deleting unreachable blocks, etc).
-	TheFPM->add(createCFGSimplificationPass());
-
-
+	TheFPM->add(createConstantPropagationPass());
+	TheFPM->add(createGVNPass());// Eliminate Common SubExpressions.
+	TheFPM->add(createNewGVNPass()); //	Global value numbering
+	TheFPM->add(createReassociatePass()); // Reassociate expressions.
+	TheFPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
+	TheFPM->add(createDeadCodeEliminationPass());
+	TheFPM->add(createCFGSimplificationPass()); //	Cleanup
+	TheFPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
+	TheFPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
 
 	TheFPM->doInitialization();
 }

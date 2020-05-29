@@ -1451,6 +1451,15 @@ static void InitializeModuleAndPassManager()
 
 	// Create a new pass manager attached to it.
 	TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
+	
+
+	TheFPM->add(createLoopVectorizePass());
+
+	TheFPM->add(createSLPVectorizerPass());
+
+	TheFPM->add(createLoadStoreVectorizerPass());
+
+	TheFPM->add(createLoopUnrollPass());
 
 	// Promote allocas to registers.
 	TheFPM->add(createPromoteMemoryToRegisterPass());
@@ -1460,16 +1469,13 @@ static void InitializeModuleAndPassManager()
 	TheFPM->add(createReassociatePass());
 	// Eliminate Common SubExpressions.
 	TheFPM->add(createGVNPass());
+
+	//TheFPM->add(createLoopIdiomPass());
+
 	// Simplify the control flow graph (deleting unreachable blocks, etc).
 	TheFPM->add(createCFGSimplificationPass());
 
-	// TEST PASSES
 
-	TheFPM->add(createLoopVectorizePass());
-
-	TheFPM->add(createSLPVectorizerPass());
-
-	TheFPM->add(createLoadStoreVectorizerPass());
 
 	TheFPM->doInitialization();
 }

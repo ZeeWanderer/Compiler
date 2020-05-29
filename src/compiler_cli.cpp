@@ -1535,6 +1535,10 @@ double main(double a1, double a2, double b1, double b2,)
 	{
 		a = 0;
 	}
+	else
+	{
+		a = 15;
+	}
 	return a;
 }
 )";

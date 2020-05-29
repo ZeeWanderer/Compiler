@@ -171,10 +171,26 @@ public:
 		return true;
 	}
 
+	virtual bool bIsNoOp()
+	{
+		return false;
+	}
+
 	virtual Value* codegen() = 0;
 };
 
 typedef std::list<std::unique_ptr<ExprAST>> ExprList;
+
+class NoOpAST : public ExprAST
+{
+
+public:
+	NoOpAST(){}
+
+	virtual bool bIsNoOp() override;
+
+	Value* codegen() override;
+};
 
 // typedef std::list<std::unique_ptr<ExprAST>> ExprList;
 /// NumberExprAST - Expression class for numeric literals like "1.0".
@@ -294,18 +310,20 @@ public:
 /// ForExprAST - Expression class for for/in.
 class ForExprAST : public ExprAST
 {
-	std::string VarName;
-	std::unique_ptr<ExprAST> Start, End, Step, Body;
+	//std::string VarName;
+	std::unique_ptr<ExprAST> VarInit, Cond, EndExpr;
+	ExprList Body;
 
 public:
-	ForExprAST(const std::string& VarName, std::unique_ptr<ExprAST> Start, std::unique_ptr<ExprAST> End, std::unique_ptr<ExprAST> Step, std::unique_ptr<ExprAST> Body)
-		: VarName(VarName)
-		, Start(std::move(Start))
-		, End(std::move(End))
-		, Step(std::move(Step))
-		, Body(std::move(Body))
+	ForExprAST(std::unique_ptr<ExprAST> VarInit, std::unique_ptr<ExprAST> Cond, ExprList Body, std::unique_ptr<ExprAST> EndExpr)
+	    : VarInit(std::move(VarInit))
+	    , Cond(std::move(Cond))
+	    , Body(std::move(Body))
+	    , EndExpr(std::move(EndExpr))
 	{
 	}
+
+	bool bExpectSemicolon() override;
 
 	Value* codegen() override;
 };
@@ -592,51 +610,40 @@ protected:
 	}
 
 	/// forexpr ::= 'for' identifier '=' expr ',' expr (',' expr)? 'in' expression
-	//	static std::unique_ptr<ExprAST> ParseForExpr()
-	//{
-	//	getNextToken(); // eat the for.
-	//
-	//	if (CurTok != tok_identifier)
-	//		return LogError("expected identifier after for");
-	//
-	//	std::string IdName = IdentifierStr;
-	//	getNextToken(); // eat identifier.
-	//
-	//	if (CurTok != '=')
-	//		return LogError("expected '=' after for");
-	//	getNextToken(); // eat '='.
-	//
-	//	auto Start = ParseExpression();
-	//	if (!Start)
-	//		return nullptr;
-	//	if (CurTok != ',')
-	//		return LogError("expected ',' after for start value");
-	//	getNextToken();
-	//
-	//	auto End = ParseExpression();
-	//	if (!End)
-	//		return nullptr;
-	//
-	//	// The step value is optional.
-	//	std::unique_ptr<ExprAST> Step;
-	//	if (CurTok == ',')
-	//	{
-	//		getNextToken();
-	//		Step = ParseExpression();
-	//		if (!Step)
-	//			return nullptr;
-	//	}
-	//
-	//	if (CurTok != tok_in)
-	//		return LogError("expected 'in' after for");
-	//	getNextToken(); // eat 'in'.
-	//
-	//	auto Body = ParseExpression();
-	//	if (!Body)
-	//		return nullptr;
-	//
-	//	return std::make_unique<ForExprAST>(IdName, std::move(Start), std::move(End), std::move(Step), std::move(Body));
-	//}
+	std::unique_ptr<ExprAST> ParseForExpr()
+	{
+		getNextToken(); // eat the for.
+
+		if (CurTok != '(')
+			return LogError("expected ( after for");
+		getNextToken(); // eat (
+
+		// var init expr.
+		auto Varinit = ParseExpression();
+		if (CurTok != ';')
+			return LogError("Expected ;");
+		getNextToken(); // Eat ;
+
+		// Cond.
+		auto Cond = ParseExpression();
+		if (CurTok != ';')
+			return LogError("Expected ;");
+		getNextToken(); // Eat ;
+
+		// AfterloopExpr.
+		auto Afterloop = ParseExpression();
+
+		if (CurTok != ')')
+			return LogError("expected )");
+		getNextToken(); // eat (
+
+		// Body
+		auto Body = ParseExpressionList();
+		if (Body.empty())
+			return LogError("Empty loop body.");
+	
+		return std::make_unique<ForExprAST>(std::move(Varinit), std::move(Cond), std::move(Body), std::move(Afterloop));
+	}
 
 	/// varexpr ::= 'var' identifier ('=' expression)?
 	//                    (',' identifier ('=' expression)?)* 'in' expression
@@ -696,7 +703,7 @@ protected:
 		case tok_number: return ParseNumberExpr();
 		case '(': return ParseParenExpr();
 		case tok_if: return ParseIfExpr();
-		//	case tok_for: return ParseForExpr();
+		case tok_for: return ParseForExpr();
 		case tok_type: return ParseVarExpr();
 		}
 	}
@@ -761,6 +768,10 @@ protected:
 	///
 	std::unique_ptr<ExprAST> ParseExpression()
 	{
+		//TODO: move where it belongs
+		if (CurTok == ';')
+			return std::make_unique<NoOpAST>();
+
 		auto LHS = ParseUnary();
 		if (!LHS)
 			return nullptr;
@@ -1026,6 +1037,16 @@ static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef
 	return TmpB.CreateAlloca(Type::getDoubleTy(TheContext), nullptr, VarName);
 }
 
+bool NoOpAST::bIsNoOp()
+{
+	return true;
+}
+
+Value* NoOpAST::codegen()
+{
+	return ConstantFP::get(TheContext, APFloat(0.0));
+}
+
 Value* NumberExprAST::codegen()
 {
 	return ConstantFP::get(TheContext, APFloat(Val));
@@ -1200,6 +1221,11 @@ Value* IfExprAST::codegen()
 	return CondV;
 }
 
+bool ForExprAST::bExpectSemicolon()
+{
+	return false;
+}
+
 // Output for-loop as:
 //   var = alloca double
 //   ...
@@ -1223,20 +1249,17 @@ Value* ForExprAST::codegen()
 {
 	Function* TheFunction = Builder.GetInsertBlock()->getParent();
 
-	// Create an alloca for the variable in the entry block.
-	AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
-
-	// Emit the start code first, without 'variable' in scope.
-	Value* StartVal = Start->codegen();
-	if (!StartVal)
-		return nullptr;
-
-	// Store the value into the alloca.
-	Builder.CreateStore(StartVal, Alloca);
+	// generate init variable
+	if (VarInit)
+		VarInit->codegen();
 
 	// Make the new basic block for the loop header, inserting after current
 	// block.
 	BasicBlock* LoopBB = BasicBlock::Create(TheContext, "loop", TheFunction);
+	// Create the "after loop" block and insert it.
+	BasicBlock* LoopBobyBB = BasicBlock::Create(TheContext, "loop_body", TheFunction);
+	// Create the "after loop" block and insert it.
+	BasicBlock* AfterBB = BasicBlock::Create(TheContext, "afterloop", TheFunction);
 
 	// Insert an explicit fall through from the current block to the LoopBB.
 	Builder.CreateBr(LoopBB);
@@ -1244,62 +1267,35 @@ Value* ForExprAST::codegen()
 	// Start insertion in LoopBB.
 	Builder.SetInsertPoint(LoopBB);
 
-	// Within the loop, the variable is defined equal to the PHI node.  If it
-	// shadows an existing variable, we have to restore it, so save it now.
-	AllocaInst* OldVal   = NamedValues[VarName];
-	NamedValues[VarName] = Alloca;
 
-	// Emit the body of the loop.  This, like any other expr, can change the
-	// current BB.  Note that we ignore the value computed by the body, but don't
-	// allow an error.
-	if (!Body->codegen())
-		return nullptr;
+	if (!Cond->bIsNoOp())
+	{
+		Value* condVal = Cond->codegen();
+		// Convert condition to a bool by comparing non-equal to 0.0.
+		condVal = Builder.CreateFCmpONE(condVal, ConstantFP::get(TheContext, APFloat(0.0)), "loopcond");
 
-	// Emit the step value.
-	Value* StepVal = nullptr;
-	if (Step)
-	{
-		StepVal = Step->codegen();
-		if (!StepVal)
-			return nullptr;
-	}
-	else
-	{
-		// If not specified, use 1.0.
-		StepVal = ConstantFP::get(TheContext, APFloat(1.0));
+		// Insert the conditional branch into the end of LoopEndBB.
+		Builder.CreateCondBr(condVal, LoopBobyBB, AfterBB);
 	}
 
-	// Compute the end condition.
-	Value* EndCond = End->codegen();
-	if (!EndCond)
-		return nullptr;
+	Builder.SetInsertPoint(LoopBobyBB);
 
-	// Reload, increment, and restore the alloca.  This handles the case where
-	// the body of the loop mutates the variable.
-	Value* CurVar  = Builder.CreateLoad(Alloca, VarName.c_str());
-	Value* NextVar = Builder.CreateFAdd(CurVar, StepVal, "nextvar");
-	Builder.CreateStore(NextVar, Alloca);
+	for (auto& expt : Body)
+	{
+		expt->codegen();
+	}
 
-	// Convert condition to a bool by comparing non-equal to 0.0.
-	EndCond = Builder.CreateFCmpONE(EndCond, ConstantFP::get(TheContext, APFloat(0.0)), "loopcond");
+	EndExpr->codegen();	
 
-	// Create the "after loop" block and insert it.
-	BasicBlock* AfterBB = BasicBlock::Create(TheContext, "afterloop", TheFunction);
-
-	// Insert the conditional branch into the end of LoopEndBB.
-	Builder.CreateCondBr(EndCond, LoopBB, AfterBB);
+	// Insert unconditional brnch to start
+	Builder.CreateBr(LoopBB);
 
 	// Any new code will be inserted in AfterBB.
 	Builder.SetInsertPoint(AfterBB);
-
-	// Restore the unshadowed variable.
-	if (OldVal)
-		NamedValues[VarName] = OldVal;
-	else
-		NamedValues.erase(VarName);
+	//Builder.CreateFCmpONE(ConstantFP::get(TheContext, APFloat(0.0)), ConstantFP::get(TheContext, APFloat(0.0)), "dmm");
 
 	// for expr always returns 0.0.
-	return Constant::getNullValue(Type::getDoubleTy(TheContext));
+	return ConstantFP::get(TheContext, APFloat(0.0));
 }
 
 Value* VarExprAST::codegen()
@@ -1539,6 +1535,16 @@ double main(double a1, double a2, double b1, double b2,)
 	{
 		a = 15;
 	}
+	for(double b = 0; b < 3; b = b + 1)
+	{
+		a = a + 2;
+	}
+
+	for(; b < 15; b = b + 1)
+	{
+		a = a + 2;
+	}
+
 	return a;
 }
 )";
@@ -1584,3 +1590,5 @@ double main(double a1, double a2, double b1, double b2,)
 
 	return 0;
 }
+
+

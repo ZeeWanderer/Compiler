@@ -22,10 +22,10 @@ static std::unique_ptr<ShaderJIT> TheJIT;
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
-static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, llvm::Type* type = Type::getDoubleTy(TheContext))
+static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, llvm::Type* type = Type::getDoubleTy(TheContext), Value* arrays = nullptr)
 {
     IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-    return TmpB.CreateAlloca(type, nullptr, VarName);
+	return TmpB.CreateAlloca(type, arrays, VarName);
 }
 
 Function* getFunction(std::string Name)
@@ -54,22 +54,23 @@ static void InitializeModuleAndPassManager()
     TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
 
     
-    // Promote allocas to registers.
-    TheFPM->add(createPromoteMemoryToRegisterPass());
-    // Do simple "peephole" optimizations and bit-twiddling optzns.
-    TheFPM->add(createInstructionCombiningPass());
-    // Reassociate expressions.
-    TheFPM->add(createReassociatePass());
-    // Eliminate Common SubExpressions.
-    TheFPM->add(createGVNPass());
-    // Simplify the control flow graph (deleting unreachable blocks, etc).
-    TheFPM->add(createCFGSimplificationPass());
-
-    TheFPM->add(createSLPVectorizerPass());
-
-    TheFPM->add(createLoadStoreVectorizerPass());
-
-    TheFPM->add(createLoopVectorizePass());
+    	TheFPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
+	   TheFPM->add(createCFGSimplificationPass());       //	Dead code elimination
+	   TheFPM->add(createSROAPass());
+	   TheFPM->add(createLoadStoreVectorizerPass());
+	   TheFPM->add(createLoopSimplifyCFGPass());
+	   TheFPM->add(createLoopVectorizePass());
+	   TheFPM->add(createLoopUnrollPass());
+	   TheFPM->add(createConstantPropagationPass());
+	   TheFPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
+	   TheFPM->add(createNewGVNPass());                  //	Global value numbering
+	   TheFPM->add(createReassociatePass());             // Reassociate expressions.
+	   TheFPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
+	   TheFPM->add(createDeadCodeEliminationPass());
+	   TheFPM->add(createCFGSimplificationPass());    //	Cleanup
+	   TheFPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
+	   TheFPM->add(createSLPVectorizerPass());
+	   TheFPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
 
     TheFPM->doInitialization();
 }
@@ -404,6 +405,7 @@ int main()
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
     InitializeNativeTargetAsmParser();
+
 
     // Install standard binary operators.
     // 1 is lowest precedence.

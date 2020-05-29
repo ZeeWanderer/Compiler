@@ -1455,7 +1455,6 @@ static void InitializeModuleAndPassManager()
 	TheFPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
 	TheFPM->add(createCFGSimplificationPass());       //	Dead code elimination
 	TheFPM->add(createSROAPass());
-	TheFPM->add(createSLPVectorizerPass());
 	TheFPM->add(createLoadStoreVectorizerPass());
 	TheFPM->add(createLoopSimplifyCFGPass());
 	TheFPM->add(createLoopVectorizePass());
@@ -1468,8 +1467,9 @@ static void InitializeModuleAndPassManager()
 	TheFPM->add(createDeadCodeEliminationPass());
 	TheFPM->add(createCFGSimplificationPass()); //	Cleanup
 	TheFPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
+	TheFPM->add(createSLPVectorizerPass());
 	TheFPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
-
+	
 	TheFPM->doInitialization();
 }
 
@@ -1523,6 +1523,11 @@ int main()
 	std::string source_code = R"(
 extern putchard(double x);
 extern printd(double x);
+double test(double a1, double a2, double b1, double b2,  double c1, double c2,  double d1, double d2)
+{
+	double c = a1+a2+b1+b2+c1+c2+d1+d2;
+	return c;
+}
 double main(double a1, double a2, double b1, double b2,)
 {
 	double a = a1*(a1 + b1);
@@ -1579,7 +1584,6 @@ double main(double a1, double a2, double b1, double b2,)
 	TheModule->dump();
 	TheJIT->addModule(std::move(TheModule));
 	InitializeModuleAndPassManager();
-
 
 	auto ExprSymbol = TheJIT->findSymbol("main");
 	assert(ExprSymbol && "Function not found");

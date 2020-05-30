@@ -185,7 +185,9 @@ class NoOpAST : public ExprAST
 {
 
 public:
-	NoOpAST(){}
+	NoOpAST()
+	{
+	}
 
 	virtual bool bIsNoOp() override;
 
@@ -200,7 +202,7 @@ class NumberExprAST : public ExprAST
 
 public:
 	NumberExprAST(double Val)
-		: Val(Val)
+	    : Val(Val)
 	{
 	}
 
@@ -214,7 +216,7 @@ class VariableExprAST : public ExprAST
 
 public:
 	VariableExprAST(const std::string& Name)
-		: Name(Name)
+	    : Name(Name)
 	{
 	}
 
@@ -233,8 +235,8 @@ class UnaryExprAST : public ExprAST
 
 public:
 	UnaryExprAST(char Opcode, std::unique_ptr<ExprAST> Operand)
-		: Opcode(Opcode)
-		, Operand(std::move(Operand))
+	    : Opcode(Opcode)
+	    , Operand(std::move(Operand))
 	{
 	}
 
@@ -247,7 +249,7 @@ class ReturnExprAST : public ExprAST
 
 public:
 	ReturnExprAST(std::unique_ptr<ExprAST> Operand)
-		: Operand(std::move(Operand))
+	    : Operand(std::move(Operand))
 	{
 	}
 
@@ -262,9 +264,9 @@ class BinaryExprAST : public ExprAST
 
 public:
 	BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
-		: Op(Op)
-		, LHS(std::move(LHS))
-		, RHS(std::move(RHS))
+	    : Op(Op)
+	    , LHS(std::move(LHS))
+	    , RHS(std::move(RHS))
 	{
 	}
 
@@ -279,8 +281,8 @@ class CallExprAST : public ExprAST
 
 public:
 	CallExprAST(const std::string& Callee, std::vector<std::unique_ptr<ExprAST>> Args)
-		: Callee(Callee)
-		, Args(std::move(Args))
+	    : Callee(Callee)
+	    , Args(std::move(Args))
 	{
 	}
 
@@ -296,9 +298,9 @@ class IfExprAST : public ExprAST
 
 public:
 	IfExprAST(std::unique_ptr<ExprAST> Cond, ExprList Then, ExprList Else)
-		: Cond(std::move(Cond))
-		, Then(std::move(Then))
-		, Else(std::move(Else))
+	    : Cond(std::move(Cond))
+	    , Then(std::move(Then))
+	    , Else(std::move(Else))
 	{
 	}
 
@@ -310,9 +312,10 @@ public:
 /// ForExprAST - Expression class for for/in.
 class ForExprAST : public ExprAST
 {
-	//std::string VarName;
-	std::unique_ptr<ExprAST> VarInit, Cond, EndExpr;
+	//	std::string VarName;
+	std::unique_ptr<ExprAST> VarInit, Cond;
 	ExprList Body;
+	std::unique_ptr<ExprAST> EndExpr;
 
 public:
 	ForExprAST(std::unique_ptr<ExprAST> VarInit, std::unique_ptr<ExprAST> Cond, ExprList Body, std::unique_ptr<ExprAST> EndExpr)
@@ -335,7 +338,7 @@ class VarExprAST : public ExprAST
 
 public:
 	VarExprAST(std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames)
-		: VarNames(std::move(VarNames))
+	    : VarNames(std::move(VarNames))
 	{
 	}
 
@@ -354,10 +357,10 @@ class PrototypeAST : public ExprAST
 
 public:
 	PrototypeAST(const std::string& Name, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
-		: Name(Name)
-		, Args(std::move(Args))
-		, IsOperator(IsOperator)
-		, Precedence(Prec)
+	    : Name(Name)
+	    , Args(std::move(Args))
+	    , IsOperator(IsOperator)
+	    , Precedence(Prec)
 	{
 	}
 
@@ -389,7 +392,6 @@ public:
 	}
 };
 
-
 /// FunctionAST - This class represents a function definition itself.
 class FunctionAST : public ExprAST
 {
@@ -398,8 +400,8 @@ class FunctionAST : public ExprAST
 
 public:
 	FunctionAST(PrototypeAST& Proto, ExprList Body)
-		: Proto(Proto)
-		, Body(std::move(Body))
+	    : Proto(Proto)
+	    , Body(std::move(Body))
 	{
 	}
 
@@ -440,11 +442,22 @@ ExprList LogErrorEX(const char* Str)
 
 /// BinopPrecedence - This holds the precedence for each binary operator that is
 /// defined.
-static std::map<char, int> BinopPrecedence;
+// GlobalContext
+static LLVMContext LLVM_Context;
+static IRBuilder<> LLVM_Builder(LLVM_Context);
+static std::unique_ptr<ShaderJIT> shllJIT;
+
+// ProgramLocal Context
+static std::unique_ptr<Module> LLVM_Module;
+static std::map<std::string, AllocaInst*> NamedValues;
+static std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
+static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
+static std::map<char, int> BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
 
 class Parser
 {
 protected:
+	std::map<char, int>& BinopPrecedence;
 	std::list<std::unique_ptr<FunctionAST>> FunctionAST_list;
 	std::list<std::unique_ptr<PrototypeAST>> PrototypeAST_list;
 
@@ -460,6 +473,11 @@ protected:
 	}
 
 public:
+	Parser(std::map<char, int>& BinopPrecedence)
+	    : BinopPrecedence(BinopPrecedence)
+	{
+	}
+
 	void set_source(std::string_view source)
 	{
 		m_tokenizer.set_source(source);
@@ -605,7 +623,7 @@ protected:
 		}
 		else
 		{
-			return std::make_unique<IfExprAST>(std::move(Cond), std::move(ifBody), std::move(ExprList()));
+			return std::make_unique<IfExprAST>(std::move(Cond), std::move(ifBody), ExprList());
 		}
 	}
 
@@ -641,7 +659,7 @@ protected:
 		auto Body = ParseExpressionList();
 		if (Body.empty())
 			return LogError("Empty loop body.");
-	
+
 		return std::make_unique<ForExprAST>(std::move(Varinit), std::move(Cond), std::move(Body), std::move(Afterloop));
 	}
 
@@ -768,7 +786,7 @@ protected:
 	///
 	std::unique_ptr<ExprAST> ParseExpression()
 	{
-		//TODO: move where it belongs
+		//	TODO: move where it belongs
 		if (CurTok == ';')
 			return std::make_unique<NoOpAST>();
 
@@ -801,7 +819,7 @@ protected:
 		}
 
 		getNextToken(); // Eat }
-		return std::move(e_list);
+		return e_list;
 	}
 
 	/// prototype
@@ -909,7 +927,7 @@ protected:
 			//	fprintf(stderr, "Read function definition:");
 			//	FnIR->print(errs());
 			//	fprintf(stderr, "\n");
-			//	TheJIT->addModule(std::move(TheModule));
+			//	shllJIT->addModule(std::move(LLVM_Module));
 			//	InitializeModuleAndPassManager();
 			//}
 		}
@@ -949,11 +967,11 @@ protected:
 	//		{
 	//			// JIT the module containing the anonymous expression, keeping a handle so
 	//			// we can free it later.
-	//			auto H = TheJIT->addModule(std::move(TheModule));
+	//			auto H = shllJIT->addModule(std::move(LLVM_Module));
 	//			InitializeModuleAndPassManager();
 	//
 	//			// Search the JIT for the __anon_expr symbol.
-	//			auto ExprSymbol = TheJIT->findSymbol("__anon_expr");
+	//			auto ExprSymbol = shllJIT->findSymbol("__anon_expr");
 	//			assert(ExprSymbol && "Function not found");
 	//
 	//			// Get the symbol's address and cast it to the right type (takes no
@@ -962,7 +980,7 @@ protected:
 	//			fprintf(stderr, "Evaluated to %f\n", FP());
 	//
 	//			// Delete the anonymous expression module from the JIT.
-	//			TheJIT->removeModule(H);
+	//			shllJIT->removeModule(H);
 	//		}
 	//	}
 	//	else
@@ -986,26 +1004,16 @@ protected:
 				break;
 			case tok_type: HandleTypedExpression(); break;
 			case tok_extern: HandleExtern(); break;
-			default: 
-				auto tmp = 2 + 3; 
-				break;
+			default: auto tmp = 2 + 3; break;
 			}
 		}
 	}
 
-} m_parser;
+} m_parser(BinopPrecedence);
 
 //===----------------------------------------------------------------------===//
 // Code Generation
 //===----------------------------------------------------------------------===//
-
-static LLVMContext TheContext;
-static IRBuilder<> Builder(TheContext);
-static std::unique_ptr<Module> TheModule;
-static std::map<std::string, AllocaInst*> NamedValues;
-static std::unique_ptr<legacy::FunctionPassManager> TheFPM;
-static std::unique_ptr<ShaderJIT> TheJIT;
-static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 
 Value* LogErrorV(const char* Str)
 {
@@ -1016,7 +1024,7 @@ Value* LogErrorV(const char* Str)
 Function* getFunction(std::string Name)
 {
 	// First, see if the function has already been added to the current module.
-	if (auto* F = TheModule->getFunction(Name))
+	if (auto* F = LLVM_Module->getFunction(Name))
 		return F;
 
 	// If not, check whether we can codegen the declaration from some existing
@@ -1034,7 +1042,7 @@ Function* getFunction(std::string Name)
 static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName)
 {
 	IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-	return TmpB.CreateAlloca(Type::getDoubleTy(TheContext), nullptr, VarName);
+	return TmpB.CreateAlloca(Type::getDoubleTy(LLVM_Context), nullptr, VarName);
 }
 
 bool NoOpAST::bIsNoOp()
@@ -1044,12 +1052,12 @@ bool NoOpAST::bIsNoOp()
 
 Value* NoOpAST::codegen()
 {
-	return ConstantFP::get(TheContext, APFloat(0.0));
+	return ConstantFP::get(LLVM_Context, APFloat(0.0));
 }
 
 Value* NumberExprAST::codegen()
 {
-	return ConstantFP::get(TheContext, APFloat(Val));
+	return ConstantFP::get(LLVM_Context, APFloat(Val));
 }
 
 Value* VariableExprAST::codegen()
@@ -1060,7 +1068,7 @@ Value* VariableExprAST::codegen()
 		return LogErrorV("Unknown variable name");
 
 	// Load the value.
-	return Builder.CreateLoad(V, Name.c_str());
+	return LLVM_Builder.CreateLoad(V, Name.c_str());
 }
 
 Value* UnaryExprAST::codegen()
@@ -1073,7 +1081,7 @@ Value* UnaryExprAST::codegen()
 	if (!F)
 		return LogErrorV("Unknown unary operator");
 
-	return Builder.CreateCall(F, OperandV, "unop");
+	return LLVM_Builder.CreateCall(F, OperandV, "unop");
 }
 
 Value* BinaryExprAST::codegen()
@@ -1098,7 +1106,7 @@ Value* BinaryExprAST::codegen()
 		if (!Variable)
 			return LogErrorV("Unknown variable name");
 
-		Builder.CreateStore(Val, Variable);
+		LLVM_Builder.CreateStore(Val, Variable);
 		return Val;
 	}
 
@@ -1109,17 +1117,17 @@ Value* BinaryExprAST::codegen()
 
 	switch (Op)
 	{
-	case '+': return Builder.CreateFAdd(L, R, "addtmp");
-	case '-': return Builder.CreateFSub(L, R, "subtmp");
-	case '*': return Builder.CreateFMul(L, R, "multmp");
+	case '+': return LLVM_Builder.CreateFAdd(L, R, "addtmp");
+	case '-': return LLVM_Builder.CreateFSub(L, R, "subtmp");
+	case '*': return LLVM_Builder.CreateFMul(L, R, "multmp");
 	case '<':
-		L = Builder.CreateFCmpULT(L, R, "cmptmp");
+		L = LLVM_Builder.CreateFCmpULT(L, R, "cmptmp");
 		// Convert bool 0/1 to double 0.0 or 1.0
-		return Builder.CreateUIToFP(L, Type::getDoubleTy(TheContext), "booltmp");
+		return LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(LLVM_Context), "booltmp");
 	case '>':
-		L = Builder.CreateFCmpUGT(L, R, "cmptmp");
+		L = LLVM_Builder.CreateFCmpUGT(L, R, "cmptmp");
 		// Convert bool 0/1 to double 0.0 or 1.0
-		return Builder.CreateUIToFP(L, Type::getDoubleTy(TheContext), "booltmp");
+		return LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(LLVM_Context), "booltmp");
 	default: break;
 	}
 
@@ -1129,7 +1137,7 @@ Value* BinaryExprAST::codegen()
 	assert(F && "binary operator not found!");
 
 	Value* Ops[] = {L, R};
-	return Builder.CreateCall(F, Ops, "binop");
+	return LLVM_Builder.CreateCall(F, Ops, "binop");
 }
 
 Value* CallExprAST::codegen()
@@ -1151,7 +1159,7 @@ Value* CallExprAST::codegen()
 			return nullptr;
 	}
 
-	return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+	return LLVM_Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
 bool IfExprAST::bExpectSemicolon()
@@ -1166,58 +1174,58 @@ Value* IfExprAST::codegen()
 		return nullptr;
 
 	// Convert condition to a bool by comparing non-equal to 0.0.
-	CondV = Builder.CreateFCmpONE(CondV, ConstantFP::get(TheContext, APFloat(0.0)), "ifcond");
+	CondV = LLVM_Builder.CreateFCmpONE(CondV, ConstantFP::get(LLVM_Context, APFloat(0.0)), "ifcond");
 
-	Function* TheFunction = Builder.GetInsertBlock()->getParent();
+	Function* TheFunction = LLVM_Builder.GetInsertBlock()->getParent();
 
 	// Create blocks for the then and else cases.  Insert the 'then' block at the
 	// end of the function.
-	BasicBlock* IfBB  = BasicBlock::Create(TheContext, "if", TheFunction);
-	BasicBlock* ElseBB  = BasicBlock::Create(TheContext, "else");
-	BasicBlock* MergeBB = BasicBlock::Create(TheContext, "ifcont");
+	BasicBlock* IfBB    = BasicBlock::Create(LLVM_Context, "if", TheFunction);
+	BasicBlock* ElseBB  = BasicBlock::Create(LLVM_Context, "else");
+	BasicBlock* MergeBB = BasicBlock::Create(LLVM_Context, "ifcont");
 
-	Builder.CreateCondBr(CondV, IfBB, ElseBB);
+	LLVM_Builder.CreateCondBr(CondV, IfBB, ElseBB);
 
 	// Emit then value.
-	Builder.SetInsertPoint(IfBB);
+	LLVM_Builder.SetInsertPoint(IfBB);
 
 	for (auto& then_expr : Then)
 	{
 		Value* val = then_expr->codegen();
 	}
 
-	//Value* ThenV = Then->codegen();
-	//if (!ThenV)
+	//	Value* ThenV = Then->codegen();
+	//	if (!ThenV)
 	//	return nullptr;
 
-	Builder.CreateBr(MergeBB);
+	LLVM_Builder.CreateBr(MergeBB);
 	// Codegen of 'Then' can change the current block, update IfBB for the PHI.
-	IfBB = Builder.GetInsertBlock();
+	IfBB = LLVM_Builder.GetInsertBlock();
 
 	// Emit else block.
 	TheFunction->getBasicBlockList().push_back(ElseBB);
-	Builder.SetInsertPoint(ElseBB);
+	LLVM_Builder.SetInsertPoint(ElseBB);
 
 	for (auto& else_expr : Else)
 	{
 		Value* val = else_expr->codegen();
 	}
 
-	//Value* ElseV = Else->codegen();
-	//if (!ElseV)
+	//	Value* ElseV = Else->codegen();
+	//	if (!ElseV)
 	//	return nullptr;
 
-	Builder.CreateBr(MergeBB);
+	LLVM_Builder.CreateBr(MergeBB);
 	// Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-	ElseBB = Builder.GetInsertBlock();
+	ElseBB = LLVM_Builder.GetInsertBlock();
 
 	// Emit merge block.
 	TheFunction->getBasicBlockList().push_back(MergeBB);
-	Builder.SetInsertPoint(MergeBB);
-	//PHINode* PN = Builder.CreatePHI(Type::getDoubleTy(TheContext), 2, "iftmp");
+	LLVM_Builder.SetInsertPoint(MergeBB);
+	//	PHINode* PN = LLVM_Builder.CreatePHI(Type::getDoubleTy(LLVM_Context), 2, "iftmp");
 
-	//PN->addIncoming(ThenV, IfBB);
-	//PN->addIncoming(ElseV, ElseBB);
+	//	PN->addIncoming(ThenV, IfBB);
+	//	PN->addIncoming(ElseV, ElseBB);
 	return CondV;
 }
 
@@ -1247,7 +1255,7 @@ bool ForExprAST::bExpectSemicolon()
 // outloop:
 Value* ForExprAST::codegen()
 {
-	Function* TheFunction = Builder.GetInsertBlock()->getParent();
+	Function* TheFunction = LLVM_Builder.GetInsertBlock()->getParent();
 
 	// generate init variable
 	if (VarInit)
@@ -1255,54 +1263,53 @@ Value* ForExprAST::codegen()
 
 	// Make the new basic block for the loop header, inserting after current
 	// block.
-	BasicBlock* LoopBB = BasicBlock::Create(TheContext, "loop", TheFunction);
+	BasicBlock* LoopBB = BasicBlock::Create(LLVM_Context, "loop", TheFunction);
 	// Create the "after loop" block and insert it.
-	BasicBlock* LoopBobyBB = BasicBlock::Create(TheContext, "loop_body", TheFunction);
+	BasicBlock* LoopBobyBB = BasicBlock::Create(LLVM_Context, "loop_body", TheFunction);
 	// Create the "after loop" block and insert it.
-	BasicBlock* AfterBB = BasicBlock::Create(TheContext, "afterloop", TheFunction);
+	BasicBlock* AfterBB = BasicBlock::Create(LLVM_Context, "afterloop", TheFunction);
 
 	// Insert an explicit fall through from the current block to the LoopBB.
-	Builder.CreateBr(LoopBB);
+	LLVM_Builder.CreateBr(LoopBB);
 
 	// Start insertion in LoopBB.
-	Builder.SetInsertPoint(LoopBB);
-
+	LLVM_Builder.SetInsertPoint(LoopBB);
 
 	if (!Cond->bIsNoOp())
 	{
 		Value* condVal = Cond->codegen();
 		// Convert condition to a bool by comparing non-equal to 0.0.
-		condVal = Builder.CreateFCmpONE(condVal, ConstantFP::get(TheContext, APFloat(0.0)), "loopcond");
+		condVal = LLVM_Builder.CreateFCmpONE(condVal, ConstantFP::get(LLVM_Context, APFloat(0.0)), "loopcond");
 
 		// Insert the conditional branch into the end of LoopEndBB.
-		Builder.CreateCondBr(condVal, LoopBobyBB, AfterBB);
+		LLVM_Builder.CreateCondBr(condVal, LoopBobyBB, AfterBB);
 	}
 
-	Builder.SetInsertPoint(LoopBobyBB);
+	LLVM_Builder.SetInsertPoint(LoopBobyBB);
 
 	for (auto& expt : Body)
 	{
 		expt->codegen();
 	}
 
-	EndExpr->codegen();	
+	EndExpr->codegen();
 
 	// Insert unconditional brnch to start
-	Builder.CreateBr(LoopBB);
+	LLVM_Builder.CreateBr(LoopBB);
 
 	// Any new code will be inserted in AfterBB.
-	Builder.SetInsertPoint(AfterBB);
-	//Builder.CreateFCmpONE(ConstantFP::get(TheContext, APFloat(0.0)), ConstantFP::get(TheContext, APFloat(0.0)), "dmm");
+	LLVM_Builder.SetInsertPoint(AfterBB);
+	//	LLVM_Builder.CreateFCmpONE(ConstantFP::get(LLVM_Context, APFloat(0.0)), ConstantFP::get(LLVM_Context, APFloat(0.0)), "dmm");
 
 	// for expr always returns 0.0.
-	return ConstantFP::get(TheContext, APFloat(0.0));
+	return ConstantFP::get(LLVM_Context, APFloat(0.0));
 }
 
 Value* VarExprAST::codegen()
 {
 	std::vector<AllocaInst*> OldBindings;
 
-	Function* TheFunction = Builder.GetInsertBlock()->getParent();
+	Function* TheFunction = LLVM_Builder.GetInsertBlock()->getParent();
 
 	// Register all variables and emit their initializer.
 	Value* retval = nullptr;
@@ -1325,11 +1332,11 @@ Value* VarExprAST::codegen()
 		}
 		else
 		{ // If not specified, use 0.0.
-			InitVal = ConstantFP::get(TheContext, APFloat(0.0));
+			InitVal = ConstantFP::get(LLVM_Context, APFloat(0.0));
 		}
 
 		AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
-		retval             = Builder.CreateStore(InitVal, Alloca);
+		retval             = LLVM_Builder.CreateStore(InitVal, Alloca);
 
 		// Remember the old variable binding so that we can restore the binding when
 		// we unrecurse.
@@ -1356,10 +1363,10 @@ Value* VarExprAST::codegen()
 Value* PrototypeAST::codegen()
 {
 	// Make the function type:  double(double,double) etc.
-	std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(TheContext));
-	FunctionType* FT = FunctionType::get(Type::getDoubleTy(TheContext), Doubles, false);
+	std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(LLVM_Context));
+	FunctionType* FT = FunctionType::get(Type::getDoubleTy(LLVM_Context), Doubles, false);
 
-	Function* F = Function::Create(FT, Function::ExternalLinkage, Name, TheModule.get());
+	Function* F = Function::Create(FT, Function::ExternalLinkage, Name, LLVM_Module.get());
 
 	// Set names for all arguments.
 	unsigned Idx = 0;
@@ -1374,7 +1381,7 @@ Value* ReturnExprAST::codegen()
 	if (Value* RetVal = Operand->codegen())
 	{
 		// Finish off the function.
-		Builder.CreateRet(RetVal);
+		LLVM_Builder.CreateRet(RetVal);
 
 		return RetVal;
 	}
@@ -1393,8 +1400,8 @@ Value* FunctionAST::codegen()
 		BinopPrecedence[Proto.getOperatorName()] = Proto.getBinaryPrecedence();
 
 	// Create a new basic block to start insertion into.
-	BasicBlock* BB = BasicBlock::Create(TheContext, "entry", TheFunction);
-	Builder.SetInsertPoint(BB);
+	BasicBlock* BB = BasicBlock::Create(LLVM_Context, "entry", TheFunction);
+	LLVM_Builder.SetInsertPoint(BB);
 
 	// Record the function arguments in the NamedValues map.
 	NamedValues.clear();
@@ -1404,7 +1411,7 @@ Value* FunctionAST::codegen()
 		AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName());
 
 		// Store the initial value into the alloca.
-		Builder.CreateStore(&Arg, Alloca);
+		LLVM_Builder.CreateStore(&Arg, Alloca);
 
 		// Add arguments to variable symbol table.
 		NamedValues[std::string(Arg.getName())] = Alloca;
@@ -1427,13 +1434,13 @@ Value* FunctionAST::codegen()
 	//	if (Value* RetVal = Body->codegen())
 	//{
 	//	// Finish off the function.
-	//	Builder.CreateRet(RetVal);
+	//	LLVM_Builder.CreateRet(RetVal);
 
 	// Validate the generated code, checking for consistency.
 	verifyFunction(*TheFunction);
 
 	// Run the optimizer on the function.
-	TheFPM->run(*TheFunction);
+	LLVM_FPM->run(*TheFunction);
 
 	return TheFunction;
 	//}
@@ -1446,31 +1453,31 @@ Value* FunctionAST::codegen()
 static void InitializeModuleAndPassManager()
 {
 	// Open a new module.
-	TheModule = std::make_unique<Module>("my cool jit", TheContext);
-	TheModule->setDataLayout(TheJIT->getTargetMachine().createDataLayout());
+	LLVM_Module = std::make_unique<Module>("my cool jit", LLVM_Context);
+	LLVM_Module->setDataLayout(shllJIT->getTargetMachine().createDataLayout());
 
 	// Create a new pass manager attached to it.
-	TheFPM = std::make_unique<legacy::FunctionPassManager>(TheModule.get());
+	LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
 
-	TheFPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
-	TheFPM->add(createCFGSimplificationPass());       //	Dead code elimination
-	TheFPM->add(createSROAPass());
-	TheFPM->add(createLoadStoreVectorizerPass());
-	TheFPM->add(createLoopSimplifyCFGPass());
-	TheFPM->add(createLoopVectorizePass());
-	TheFPM->add(createLoopUnrollPass());
-	TheFPM->add(createConstantPropagationPass());
-	TheFPM->add(createGVNPass());// Eliminate Common SubExpressions.
-	TheFPM->add(createNewGVNPass()); //	Global value numbering
-	TheFPM->add(createReassociatePass()); // Reassociate expressions.
-	TheFPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
-	TheFPM->add(createDeadCodeEliminationPass());
-	TheFPM->add(createCFGSimplificationPass()); //	Cleanup
-	TheFPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
-	TheFPM->add(createSLPVectorizerPass());
-	TheFPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
-	
-	TheFPM->doInitialization();
+	LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
+	LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
+	LLVM_FPM->add(createSROAPass());
+	LLVM_FPM->add(createLoadStoreVectorizerPass());
+	LLVM_FPM->add(createLoopSimplifyCFGPass());
+	LLVM_FPM->add(createLoopVectorizePass());
+	LLVM_FPM->add(createLoopUnrollPass());
+	LLVM_FPM->add(createConstantPropagationPass());
+	LLVM_FPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
+	LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
+	LLVM_FPM->add(createReassociatePass());             // Reassociate expressions.
+	LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
+	LLVM_FPM->add(createDeadCodeEliminationPass());
+	LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
+	LLVM_FPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
+	LLVM_FPM->add(createSLPVectorizerPass());
+	LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
+
+	LLVM_FPM->doInitialization();
 }
 
 //===----------------------------------------------------------------------===//
@@ -1500,6 +1507,21 @@ extern "C" DLLEXPORT double printd(double X)
 //===----------------------------------------------------------------------===//
 // Main driver code.
 //===----------------------------------------------------------------------===//
+#include <sstream>
+#include <iomanip>
+#include <iostream>
+#include <Windows.h>
+
+std::string hexStr(BYTE* data, int len)
+{
+	std::stringstream ss;
+	ss << std::hex;
+
+	for (int i(0); i < len; ++i)
+		ss << std::setw(2) << std::setfill('0') << (int)data[i];
+
+	return ss.str();
+}
 
 int main()
 {
@@ -1507,16 +1529,7 @@ int main()
 	InitializeNativeTargetAsmPrinter();
 	InitializeNativeTargetAsmParser();
 
-	// Install standard binary operators.
-	// 1 is lowest precedence.
-	BinopPrecedence['='] = 2;
-	BinopPrecedence['<'] = 10;
-	BinopPrecedence['>'] = 10;
-	BinopPrecedence['+'] = 20;
-	BinopPrecedence['-'] = 20;
-	BinopPrecedence['*'] = 40; // highest.
-
-	TheJIT = std::make_unique<ShaderJIT>();
+	shllJIT = std::make_unique<ShaderJIT>();
 
 	InitializeModuleAndPassManager();
 
@@ -1528,7 +1541,7 @@ double test(double a1, double a2, double b1, double b2,  double c1, double c2,  
 	double c = a1+a2+b1+b2+c1+c2+d1+d2;
 	return c;
 }
-double main(double a1, double a2, double b1, double b2,)
+double main(double a1, double a2, double b1, double b2)
 {
 	double a = a1*(a1 + b1);
 	if(a>0)
@@ -1577,21 +1590,26 @@ double main(double a1, double a2, double b1, double b2,)
 			fprintf(stderr, "Read function definition:");
 			FnIR->print(errs());
 			fprintf(stderr, "\n");
-			
 		}
 	}
 
-	TheModule->dump();
-	TheJIT->addModule(std::move(TheModule));
+	LLVM_Module->dump();
+	shllJIT->addModule(std::move(LLVM_Module));
 	InitializeModuleAndPassManager();
 
-	auto ExprSymbol = TheJIT->findSymbol("main");
+	auto ExprSymbol_ = shllJIT->findSymbol("test");
+	auto ptr         = cantFail(ExprSymbol_.getAddress());
+
+	auto ExprSymbol = shllJIT->findSymbol("main");
 	assert(ExprSymbol && "Function not found");
 
 	double (*FP)(double, double, double, double) = (double (*)(double, double, double, double))(intptr_t)cantFail(ExprSymbol.getAddress());
 	fprintf(stderr, "Evaluated to %f\n", FP(1, 1, -4, 4));
 
+	auto base_str = hexStr((BYTE*)&FP, sizeof(FP));
+	std::cout << base_str << std::endl;
+	auto bodystr = hexStr((BYTE*)FP, 150);
+	std::cout << bodystr << std::endl;
+
 	return 0;
 }
-
-

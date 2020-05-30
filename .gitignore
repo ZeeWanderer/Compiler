@@ -32,6 +32,7 @@
 
 /doc
 /build
+/Intermediate
 /lib
 /tmp
 /ipch

@@ -6,6 +6,8 @@
 
 using namespace llvm;
 using namespace llvm::orc;
+using namespace slljit;
+
 
 static std::map<char, int> BinopPrecedence;
 

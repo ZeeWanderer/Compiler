@@ -292,6 +292,49 @@ struct data_test
 	__int32 a;
 };
 
+static double test = 5;
+
+void GenerateFunc_6()
+{
+	std::string Globalname = "global_x_ptr_ptr";
+	LLVM_Module->getOrInsertGlobal(Globalname, Type::getDoublePtrTy(LLVM_Context));
+	{
+
+		GlobalVariable* gVar = LLVM_Module->getNamedGlobal(Globalname);
+		gVar->setLinkage(GlobalValue::ExternalLinkage);
+		gVar->setInitializer(ConstantPointerNull::get(Type::getDoublePtrTy(LLVM_Context)));
+	}
+	{
+		LLVM_Module->getOrInsertGlobal("a", Type::getDoublePtrTy(LLVM_Context));
+		GlobalVariable* gVar_ = LLVM_Module->getNamedGlobal("a");
+		gVar_->setLinkage(GlobalValue::ExternalLinkage);
+		gVar_->setInitializer(ConstantPointerNull::get(Type::getDoublePtrTy(LLVM_Context)));
+	}
+	{
+		LLVM_Module->getOrInsertGlobal("b", Type::getDoublePtrTy(LLVM_Context));
+		GlobalVariable* gVar_ = LLVM_Module->getNamedGlobal("b");
+		gVar_->setLinkage(GlobalValue::ExternalLinkage);
+		gVar_->setInitializer(ConstantPointerNull::get(Type::getDoublePtrTy(LLVM_Context)));
+	}
+	auto& g_list = LLVM_Module->getGlobalList();
+	for (auto& var : g_list)
+	{
+		auto name = var.getName();
+		name.size();
+	}
+	/*ConstantPointerNull::get(Type::getDoublePtrTy(LLVM_Context));
+	FunctionType* FT = FunctionType::get(Type::getDoubleTy(LLVM_Context), nullptr, false);
+
+	Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, "main_ptr_test", LLVM_Module.get());
+
+	BasicBlock* BB = BasicBlock::Create(LLVM_Context, "entry", TheFunction);
+	LLVM_Builder.SetInsertPoint(BB);
+	auto ptr = LLVM_Builder.CreateLoad(gVar);
+	auto constant = ConstantFP::get(LLVM_Context, APFloat(15.0));
+	LLVM_Builder.CreateStore(constant, ptr);
+	LLVM_Builder.CreateRet(constant);*/
+}
+
 void GenerateFunc_2()
 {
 	std::string Globalname = "global_x_ptr";
@@ -301,7 +344,6 @@ void GenerateFunc_2()
 	gVar->setInitializer(ConstantInt::get(LLVM_Context, APInt(32, 0)));
 	//	auto const_ = gVar->isConstant();
 	//	gVar->setAlignment(4);
-
 	{
 		// CODEGEN TESTS
 		std::vector<std::string> Args{"base_ptr"};
@@ -477,6 +519,16 @@ int main()
 	*global_x_ptr = 4;
 
 	t_fp_global_ptr = _FP__get_global();
+
+	InitializeModuleAndPassManager();
+
+	GenerateFunc_6();
+	LLVM_Module->dump();
+	shllJIT->addModule(std::move(LLVM_Module));
+	InitializeModuleAndPassManager();
+	//auto ExprSymbol_global_x_ptr_ptr = shllJIT->findSymbol("global_x_ptr_ptr");
+	//double (*_FPglobal_x_ptr_ptr)()  = (double (*)())(intptr_t)cantFail(ExprSymbol_get_global_ptr.getAddress());
+	//_FPglobal_x_ptr_ptr();
 
 	// Beware: exiting in debug mode triggers assert.
 	return 0;

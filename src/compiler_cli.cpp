@@ -153,6 +153,9 @@ public:
 	}
 };
 
+class Context;
+class LocalContext;
+
 //===----------------------------------------------------------------------===//
 // Abstract Syntax Tree (aka Parse Tree)
 //===----------------------------------------------------------------------===//
@@ -176,7 +179,7 @@ public:
 		return false;
 	}
 
-	virtual Value* codegen() = 0;
+	virtual Value* codegen(Context& m_context, LocalContext& m_local_context) = 0;
 };
 
 typedef std::list<std::unique_ptr<ExprAST>> ExprList;
@@ -191,7 +194,7 @@ public:
 
 	virtual bool bIsNoOp() override;
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 // typedef std::list<std::unique_ptr<ExprAST>> ExprList;
@@ -206,7 +209,7 @@ public:
 	{
 	}
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 /// VariableExprAST - Expression class for referencing a variable, like "a".
@@ -220,7 +223,7 @@ public:
 	{
 	}
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 	const std::string& getName() const
 	{
 		return Name;
@@ -240,7 +243,7 @@ public:
 	{
 	}
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 /// UnaryExprAST - Expression class for a unary operator.
 class ReturnExprAST : public ExprAST
@@ -253,7 +256,7 @@ public:
 	{
 	}
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
@@ -270,7 +273,7 @@ public:
 	{
 	}
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 /// CallExprAST - Expression class for function calls.
@@ -286,7 +289,7 @@ public:
 	{
 	}
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 /// IfExprAST - Expression class for if/else.
@@ -306,7 +309,7 @@ public:
 
 	bool bExpectSemicolon() override;
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 /// ForExprAST - Expression class for for/in.
@@ -328,7 +331,7 @@ public:
 
 	bool bExpectSemicolon() override;
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 /// VarExprAST - Expression class for var/in
@@ -342,7 +345,7 @@ public:
 	{
 	}
 
-	Value* codegen() override;
+	Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -365,7 +368,7 @@ public:
 	}
 
 	// Cast to Function*
-	Value* codegen();
+	Value* codegen(Context& m_context, LocalContext& m_local_context);
 	const std::string& getName() const
 	{
 		return Name;
@@ -406,7 +409,7 @@ public:
 	}
 
 	// Cast to Function*
-	Value* codegen();
+	Value* codegen(Context& m_context, LocalContext& m_local_context);
 };
 
 //} // end anonymous namespace
@@ -443,16 +446,73 @@ ExprList LogErrorEX(const char* Str)
 /// BinopPrecedence - This holds the precedence for each binary operator that is
 /// defined.
 // GlobalContext
-static LLVMContext LLVM_Context;
-static IRBuilder<> LLVM_Builder(LLVM_Context);
-static std::unique_ptr<ShaderJIT> shllJIT;
+//static LLVMContext LLVM_Context;
+//static IRBuilder<> LLVM_Builder(LLVM_Context);
+//static std::unique_ptr<ShaderJIT> shllJIT;
+//
+//// ProgramLocal Context
+//static std::unique_ptr<Module> LLVM_Module;
+//static std::map<std::string, AllocaInst*> NamedValues;
+//static std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
+//static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
+//static std::map<char, int> BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
 
-// ProgramLocal Context
-static std::unique_ptr<Module> LLVM_Module;
-static std::map<std::string, AllocaInst*> NamedValues;
-static std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
-static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
-static std::map<char, int> BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
+class Context
+{
+public:
+	LLVMContext LLVM_Context;
+	IRBuilder<> LLVM_Builder;
+	std::unique_ptr<ShaderJIT> shllJIT;
+
+public:
+	Context()
+	    : LLVM_Builder(LLVM_Context)
+	{
+		shllJIT = std::make_unique<ShaderJIT>();
+	}
+};
+
+class LocalContext
+{
+public:
+	std::unique_ptr<Module> LLVM_Module;
+	std::map<std::string, AllocaInst*> NamedValues;
+	std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
+	std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
+	std::map<char, int> BinopPrecedence;
+public:
+	LocalContext(Context& m_context)
+	{
+		BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
+
+		// Open a new module.
+		LLVM_Module = std::make_unique<Module>("my cool jit", m_context.LLVM_Context);
+		LLVM_Module->setDataLayout(m_context.shllJIT->getTargetMachine().createDataLayout());
+
+		// Create a new pass manager attached to it.
+		LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
+
+		LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
+		LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
+		LLVM_FPM->add(createSROAPass());
+		LLVM_FPM->add(createLoadStoreVectorizerPass());
+		LLVM_FPM->add(createLoopSimplifyCFGPass());
+		LLVM_FPM->add(createLoopVectorizePass());
+		LLVM_FPM->add(createLoopUnrollPass());
+		LLVM_FPM->add(createConstantPropagationPass());
+		LLVM_FPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
+		LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
+		LLVM_FPM->add(createReassociatePass());             // Reassociate expressions.
+		LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
+		LLVM_FPM->add(createDeadCodeEliminationPass());
+		LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
+		LLVM_FPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
+		LLVM_FPM->add(createSLPVectorizerPass());
+		LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
+
+		LLVM_FPM->doInitialization();
+	}
+};
 
 class Parser
 {
@@ -922,7 +982,7 @@ protected:
 		if (auto FnAST = ParseTopLevelTypedExpression())
 		{
 			FunctionAST_list.emplace_back(std::move(FnAST));
-			//	if (auto* FnIR = FnAST->codegen())
+			//	if (auto* FnIR = FnAST->codegen(m_context, m_local_context))
 			//{
 			//	fprintf(stderr, "Read function definition:");
 			//	FnIR->print(errs());
@@ -943,7 +1003,7 @@ protected:
 		if (auto ProtoAST = ParseExtern())
 		{
 			PrototypeAST_list.emplace_back(std::move(ProtoAST));
-			//	if (auto* FnIR = ProtoAST->codegen())
+			//	if (auto* FnIR = ProtoAST->codegen(m_context, m_local_context))
 			//{
 			//	fprintf(stderr, "Read extern: ");
 			//	FnIR->print(errs());
@@ -963,7 +1023,7 @@ protected:
 	//	// Evaluate a top-level expression into an anonymous function.
 	//	if (auto FnAST = ParseTopLevelExpr())
 	//	{
-	//		if (FnAST->codegen())
+	//		if (FnAST->codegen(m_context, m_local_context))
 	//		{
 	//			// JIT the module containing the anonymous expression, keeping a handle so
 	//			// we can free it later.
@@ -1009,7 +1069,7 @@ protected:
 		}
 	}
 
-} m_parser(BinopPrecedence);
+};
 
 //===----------------------------------------------------------------------===//
 // Code Generation
@@ -1021,17 +1081,17 @@ Value* LogErrorV(const char* Str)
 	return nullptr;
 }
 
-Function* getFunction(std::string Name)
+Function* getFunction(std::string Name, Context& m_context, LocalContext& m_local_context)
 {
 	// First, see if the function has already been added to the current module.
-	if (auto* F = LLVM_Module->getFunction(Name))
+	if (auto* F = m_local_context.LLVM_Module->getFunction(Name))
 		return F;
 
 	// If not, check whether we can codegen the declaration from some existing
 	// prototype.
-	auto FI = FunctionProtos.find(Name);
-	if (FI != FunctionProtos.end())
-		return static_cast<Function*>(FI->second->codegen());
+	auto FI = m_local_context.FunctionProtos.find(Name);
+	if (FI != m_local_context.FunctionProtos.end())
+		return static_cast<Function*>(FI->second->codegen(m_context, m_local_context));
 
 	// If no existing prototype exists, return null.
 	return nullptr;
@@ -1039,10 +1099,10 @@ Function* getFunction(std::string Name)
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
-static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName)
+static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, Context& m_context, LocalContext& m_local_context)
 {
 	IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-	return TmpB.CreateAlloca(Type::getDoubleTy(LLVM_Context), nullptr, VarName);
+	return TmpB.CreateAlloca(Type::getDoubleTy(m_context.LLVM_Context), nullptr, VarName);
 }
 
 bool NoOpAST::bIsNoOp()
@@ -1050,41 +1110,41 @@ bool NoOpAST::bIsNoOp()
 	return true;
 }
 
-Value* NoOpAST::codegen()
+Value* NoOpAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
-	return ConstantFP::get(LLVM_Context, APFloat(0.0));
+	return ConstantFP::get(m_context.LLVM_Context, APFloat(0.0));
 }
 
-Value* NumberExprAST::codegen()
+Value* NumberExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
-	return ConstantFP::get(LLVM_Context, APFloat(Val));
+	return ConstantFP::get(m_context.LLVM_Context, APFloat(Val));
 }
 
-Value* VariableExprAST::codegen()
+Value* VariableExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
 	// Look this variable up in the function.
-	Value* V = NamedValues[Name];
+	Value* V = m_local_context.NamedValues[Name];
 	if (!V)
 		return LogErrorV("Unknown variable name");
 
 	// Load the value.
-	return LLVM_Builder.CreateLoad(V, Name.c_str());
+	return m_context.LLVM_Builder.CreateLoad(V, Name.c_str());
 }
 
-Value* UnaryExprAST::codegen()
+Value* UnaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
-	Value* OperandV = Operand->codegen();
+	Value* OperandV = Operand->codegen(m_context, m_local_context);
 	if (!OperandV)
 		return nullptr;
 
-	Function* F = getFunction(std::string("unary") + Opcode);
+	Function* F = getFunction(std::string("unary") + Opcode, m_context, m_local_context);
 	if (!F)
 		return LogErrorV("Unknown unary operator");
 
-	return LLVM_Builder.CreateCall(F, OperandV, "unop");
+	return m_context.LLVM_Builder.CreateCall(F, OperandV, "unop");
 }
 
-Value* BinaryExprAST::codegen()
+Value* BinaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
 	// Special case '=' because we don't want to emit the LHS as an expression.
 	if (Op == '=')
@@ -1097,53 +1157,53 @@ Value* BinaryExprAST::codegen()
 		if (!LHSE)
 			return LogErrorV("destination of '=' must be a variable");
 		// Codegen the RHS.
-		Value* Val = RHS->codegen();
+		Value* Val = RHS->codegen(m_context, m_local_context);
 		if (!Val)
 			return nullptr;
 
 		// Look up the name.
-		Value* Variable = NamedValues[LHSE->getName()];
+		Value* Variable = m_local_context.NamedValues[LHSE->getName()];
 		if (!Variable)
 			return LogErrorV("Unknown variable name");
 
-		LLVM_Builder.CreateStore(Val, Variable);
+		m_context.LLVM_Builder.CreateStore(Val, Variable);
 		return Val;
 	}
 
-	Value* L = LHS->codegen();
-	Value* R = RHS->codegen();
+	Value* L = LHS->codegen(m_context, m_local_context);
+	Value* R = RHS->codegen(m_context, m_local_context);
 	if (!L || !R)
 		return nullptr;
 
 	switch (Op)
 	{
-	case '+': return LLVM_Builder.CreateFAdd(L, R, "addtmp");
-	case '-': return LLVM_Builder.CreateFSub(L, R, "subtmp");
-	case '*': return LLVM_Builder.CreateFMul(L, R, "multmp");
+	case '+': return m_context.LLVM_Builder.CreateFAdd(L, R, "addtmp");
+	case '-': return m_context.LLVM_Builder.CreateFSub(L, R, "subtmp");
+	case '*': return m_context.LLVM_Builder.CreateFMul(L, R, "multmp");
 	case '<':
-		L = LLVM_Builder.CreateFCmpULT(L, R, "cmptmp");
+		L = m_context.LLVM_Builder.CreateFCmpULT(L, R, "cmptmp");
 		// Convert bool 0/1 to double 0.0 or 1.0
-		return LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(LLVM_Context), "booltmp");
+		return m_context.LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(m_context.LLVM_Context), "booltmp");
 	case '>':
-		L = LLVM_Builder.CreateFCmpUGT(L, R, "cmptmp");
+		L = m_context.LLVM_Builder.CreateFCmpUGT(L, R, "cmptmp");
 		// Convert bool 0/1 to double 0.0 or 1.0
-		return LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(LLVM_Context), "booltmp");
+		return m_context.LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(m_context.LLVM_Context), "booltmp");
 	default: break;
 	}
 
 	// If it wasn't a builtin binary operator, it must be a user defined one. Emit
 	// a call to it.
-	Function* F = getFunction(std::string("binary") + Op);
+	Function* F = getFunction(std::string("binary") + Op, m_context, m_local_context);
 	assert(F && "binary operator not found!");
 
 	Value* Ops[] = {L, R};
-	return LLVM_Builder.CreateCall(F, Ops, "binop");
+	return m_context.LLVM_Builder.CreateCall(F, Ops, "binop");
 }
 
-Value* CallExprAST::codegen()
+Value* CallExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
 	// Look up the name in the global module table.
-	Function* CalleeF = getFunction(Callee);
+	Function* CalleeF = getFunction(Callee, m_context, m_local_context);
 	if (!CalleeF)
 		return LogErrorV("Unknown function referenced");
 
@@ -1154,12 +1214,12 @@ Value* CallExprAST::codegen()
 	std::vector<Value*> ArgsV;
 	for (unsigned i = 0, e = Args.size(); i != e; ++i)
 	{
-		ArgsV.push_back(Args[i]->codegen());
+		ArgsV.push_back(Args[i]->codegen(m_context, m_local_context));
 		if (!ArgsV.back())
 			return nullptr;
 	}
 
-	return LLVM_Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+	return m_context.LLVM_Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
 bool IfExprAST::bExpectSemicolon()
@@ -1167,61 +1227,61 @@ bool IfExprAST::bExpectSemicolon()
 	return false;
 }
 
-Value* IfExprAST::codegen()
+Value* IfExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
-	Value* CondV = Cond->codegen();
+	Value* CondV = Cond->codegen(m_context, m_local_context);
 	if (!CondV)
 		return nullptr;
 
 	// Convert condition to a bool by comparing non-equal to 0.0.
-	CondV = LLVM_Builder.CreateFCmpONE(CondV, ConstantFP::get(LLVM_Context, APFloat(0.0)), "ifcond");
+	CondV = m_context.LLVM_Builder.CreateFCmpONE(CondV, ConstantFP::get(m_context.LLVM_Context, APFloat(0.0)), "ifcond");
 
-	Function* TheFunction = LLVM_Builder.GetInsertBlock()->getParent();
+	Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
 
 	// Create blocks for the then and else cases.  Insert the 'then' block at the
 	// end of the function.
-	BasicBlock* IfBB    = BasicBlock::Create(LLVM_Context, "if", TheFunction);
-	BasicBlock* ElseBB  = BasicBlock::Create(LLVM_Context, "else");
-	BasicBlock* MergeBB = BasicBlock::Create(LLVM_Context, "ifcont");
+	BasicBlock* IfBB    = BasicBlock::Create(m_context.LLVM_Context, "if", TheFunction);
+	BasicBlock* ElseBB  = BasicBlock::Create(m_context.LLVM_Context, "else");
+	BasicBlock* MergeBB = BasicBlock::Create(m_context.LLVM_Context, "ifcont");
 
-	LLVM_Builder.CreateCondBr(CondV, IfBB, ElseBB);
+	m_context.LLVM_Builder.CreateCondBr(CondV, IfBB, ElseBB);
 
 	// Emit then value.
-	LLVM_Builder.SetInsertPoint(IfBB);
+	m_context.LLVM_Builder.SetInsertPoint(IfBB);
 
 	for (auto& then_expr : Then)
 	{
-		Value* val = then_expr->codegen();
+		then_expr->codegen(m_context, m_local_context);
 	}
 
-	//	Value* ThenV = Then->codegen();
+	//	Value* ThenV = Then->codegen(m_context, m_local_context);
 	//	if (!ThenV)
 	//	return nullptr;
 
-	LLVM_Builder.CreateBr(MergeBB);
+	m_context.LLVM_Builder.CreateBr(MergeBB);
 	// Codegen of 'Then' can change the current block, update IfBB for the PHI.
-	IfBB = LLVM_Builder.GetInsertBlock();
+	IfBB = m_context.LLVM_Builder.GetInsertBlock();
 
 	// Emit else block.
 	TheFunction->getBasicBlockList().push_back(ElseBB);
-	LLVM_Builder.SetInsertPoint(ElseBB);
+	m_context.LLVM_Builder.SetInsertPoint(ElseBB);
 
 	for (auto& else_expr : Else)
 	{
-		Value* val = else_expr->codegen();
+		else_expr->codegen(m_context, m_local_context);
 	}
 
-	//	Value* ElseV = Else->codegen();
+	//	Value* ElseV = Else->codegen(m_context, m_local_context);
 	//	if (!ElseV)
 	//	return nullptr;
 
-	LLVM_Builder.CreateBr(MergeBB);
+	m_context.LLVM_Builder.CreateBr(MergeBB);
 	// Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-	ElseBB = LLVM_Builder.GetInsertBlock();
+	ElseBB = m_context.LLVM_Builder.GetInsertBlock();
 
 	// Emit merge block.
 	TheFunction->getBasicBlockList().push_back(MergeBB);
-	LLVM_Builder.SetInsertPoint(MergeBB);
+	m_context.LLVM_Builder.SetInsertPoint(MergeBB);
 	//	PHINode* PN = LLVM_Builder.CreatePHI(Type::getDoubleTy(LLVM_Context), 2, "iftmp");
 
 	//	PN->addIncoming(ThenV, IfBB);
@@ -1253,63 +1313,63 @@ bool ForExprAST::bExpectSemicolon()
 //   store nextvar -> var
 //   br endcond, loop, endloop
 // outloop:
-Value* ForExprAST::codegen()
+Value* ForExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
-	Function* TheFunction = LLVM_Builder.GetInsertBlock()->getParent();
+	Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
 
 	// generate init variable
 	if (VarInit)
-		VarInit->codegen();
+		VarInit->codegen(m_context, m_local_context);
 
 	// Make the new basic block for the loop header, inserting after current
 	// block.
-	BasicBlock* LoopBB = BasicBlock::Create(LLVM_Context, "loop", TheFunction);
+	BasicBlock* LoopBB = BasicBlock::Create(m_context.LLVM_Context, "loop", TheFunction);
 	// Create the "after loop" block and insert it.
-	BasicBlock* LoopBobyBB = BasicBlock::Create(LLVM_Context, "loop_body", TheFunction);
+	BasicBlock* LoopBobyBB = BasicBlock::Create(m_context.LLVM_Context, "loop_body", TheFunction);
 	// Create the "after loop" block and insert it.
-	BasicBlock* AfterBB = BasicBlock::Create(LLVM_Context, "afterloop", TheFunction);
+	BasicBlock* AfterBB = BasicBlock::Create(m_context.LLVM_Context, "afterloop", TheFunction);
 
 	// Insert an explicit fall through from the current block to the LoopBB.
-	LLVM_Builder.CreateBr(LoopBB);
+	m_context.LLVM_Builder.CreateBr(LoopBB);
 
 	// Start insertion in LoopBB.
-	LLVM_Builder.SetInsertPoint(LoopBB);
+	m_context.LLVM_Builder.SetInsertPoint(LoopBB);
 
 	if (!Cond->bIsNoOp())
 	{
-		Value* condVal = Cond->codegen();
+		Value* condVal = Cond->codegen(m_context, m_local_context);
 		// Convert condition to a bool by comparing non-equal to 0.0.
-		condVal = LLVM_Builder.CreateFCmpONE(condVal, ConstantFP::get(LLVM_Context, APFloat(0.0)), "loopcond");
+		condVal = m_context.LLVM_Builder.CreateFCmpONE(condVal, ConstantFP::get(m_context.LLVM_Context, APFloat(0.0)), "loopcond");
 
 		// Insert the conditional branch into the end of LoopEndBB.
-		LLVM_Builder.CreateCondBr(condVal, LoopBobyBB, AfterBB);
+		m_context.LLVM_Builder.CreateCondBr(condVal, LoopBobyBB, AfterBB);
 	}
 
-	LLVM_Builder.SetInsertPoint(LoopBobyBB);
+	m_context.LLVM_Builder.SetInsertPoint(LoopBobyBB);
 
 	for (auto& expt : Body)
 	{
-		expt->codegen();
+		expt->codegen(m_context, m_local_context);
 	}
 
-	EndExpr->codegen();
+	EndExpr->codegen(m_context, m_local_context);
 
 	// Insert unconditional brnch to start
-	LLVM_Builder.CreateBr(LoopBB);
+	m_context.LLVM_Builder.CreateBr(LoopBB);
 
 	// Any new code will be inserted in AfterBB.
-	LLVM_Builder.SetInsertPoint(AfterBB);
+	m_context.LLVM_Builder.SetInsertPoint(AfterBB);
 	//	LLVM_Builder.CreateFCmpONE(ConstantFP::get(LLVM_Context, APFloat(0.0)), ConstantFP::get(LLVM_Context, APFloat(0.0)), "dmm");
 
 	// for expr always returns 0.0.
-	return ConstantFP::get(LLVM_Context, APFloat(0.0));
+	return ConstantFP::get(m_context.LLVM_Context, APFloat(0.0));
 }
 
-Value* VarExprAST::codegen()
+Value* VarExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
 	std::vector<AllocaInst*> OldBindings;
 
-	Function* TheFunction = LLVM_Builder.GetInsertBlock()->getParent();
+	Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
 
 	// Register all variables and emit their initializer.
 	Value* retval = nullptr;
@@ -1326,28 +1386,28 @@ Value* VarExprAST::codegen()
 		Value* InitVal;
 		if (Init)
 		{
-			InitVal = Init->codegen();
+			InitVal = Init->codegen(m_context, m_local_context);
 			if (!InitVal)
 				return nullptr;
 		}
 		else
 		{ // If not specified, use 0.0.
-			InitVal = ConstantFP::get(LLVM_Context, APFloat(0.0));
+			InitVal = ConstantFP::get(m_context.LLVM_Context, APFloat(0.0));
 		}
 
-		AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName);
-		retval             = LLVM_Builder.CreateStore(InitVal, Alloca);
+		AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName, m_context, m_local_context);
+		retval             = m_context.LLVM_Builder.CreateStore(InitVal, Alloca);
 
 		// Remember the old variable binding so that we can restore the binding when
 		// we unrecurse.
-		OldBindings.push_back(NamedValues[VarName]);
+		OldBindings.push_back(m_local_context.NamedValues[VarName]);
 
 		// Remember this binding.
-		NamedValues[VarName] = Alloca;
+		m_local_context.NamedValues[VarName] = Alloca;
 	}
 
 	// Codegen the body, now that all vars are in scope.
-	//	Value* BodyVal = Body->codegen();
+	//	Value* BodyVal = Body->codegen(m_context, m_local_context);
 	//	if (!BodyVal)
 	//	return nullptr;
 
@@ -1360,13 +1420,13 @@ Value* VarExprAST::codegen()
 }
 
 // Cast to Function*
-Value* PrototypeAST::codegen()
+Value* PrototypeAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
 	// Make the function type:  double(double,double) etc.
-	std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(LLVM_Context));
-	FunctionType* FT = FunctionType::get(Type::getDoubleTy(LLVM_Context), Doubles, false);
+	std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(m_context.LLVM_Context));
+	FunctionType* FT = FunctionType::get(Type::getDoubleTy(m_context.LLVM_Context), Doubles, false);
 
-	Function* F = Function::Create(FT, Function::ExternalLinkage, Name, LLVM_Module.get());
+	Function* F = Function::Create(FT, Function::ExternalLinkage, Name, m_local_context.LLVM_Module.get());
 
 	// Set names for all arguments.
 	unsigned Idx = 0;
@@ -1376,12 +1436,12 @@ Value* PrototypeAST::codegen()
 	return F;
 }
 
-Value* ReturnExprAST::codegen()
+Value* ReturnExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
-	if (Value* RetVal = Operand->codegen())
+	if (Value* RetVal = Operand->codegen(m_context, m_local_context))
 	{
 		// Finish off the function.
-		LLVM_Builder.CreateRet(RetVal);
+		m_context.LLVM_Builder.CreateRet(RetVal);
 
 		return RetVal;
 	}
@@ -1389,49 +1449,49 @@ Value* ReturnExprAST::codegen()
 }
 
 // Cast to Function*
-Value* FunctionAST::codegen()
+Value* FunctionAST::codegen(Context& m_context, LocalContext& m_local_context)
 {
-	Function* TheFunction = getFunction(Proto.getName());
+	Function* TheFunction = getFunction(Proto.getName(), m_context, m_local_context);
 	if (!TheFunction)
 		return nullptr;
 
 	// If this is an operator, install it.
 	if (Proto.isBinaryOp())
-		BinopPrecedence[Proto.getOperatorName()] = Proto.getBinaryPrecedence();
+		m_local_context.BinopPrecedence[Proto.getOperatorName()] = Proto.getBinaryPrecedence();
 
 	// Create a new basic block to start insertion into.
-	BasicBlock* BB = BasicBlock::Create(LLVM_Context, "entry", TheFunction);
-	LLVM_Builder.SetInsertPoint(BB);
+	BasicBlock* BB = BasicBlock::Create(m_context.LLVM_Context, "entry", TheFunction);
+	m_context.LLVM_Builder.SetInsertPoint(BB);
 
 	// Record the function arguments in the NamedValues map.
-	NamedValues.clear();
+	m_local_context.NamedValues.clear();
 	for (auto& Arg : TheFunction->args())
 	{
 		// Create an alloca for this variable.
-		AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName());
+		AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), m_context, m_local_context);
 
 		// Store the initial value into the alloca.
-		LLVM_Builder.CreateStore(&Arg, Alloca);
+		m_context.LLVM_Builder.CreateStore(&Arg, Alloca);
 
 		// Add arguments to variable symbol table.
-		NamedValues[std::string(Arg.getName())] = Alloca;
+		m_local_context.NamedValues[std::string(Arg.getName())] = Alloca;
 	}
 
 	for (auto& expression : Body)
 	{
-		auto test = expression->codegen();
+		auto test = expression->codegen(m_context, m_local_context);
 		if (!test)
 		{
 			// Error reading body, remove function.
 			TheFunction->eraseFromParent();
 
 			if (Proto.isBinaryOp())
-				BinopPrecedence.erase(Proto.getOperatorName());
+				m_local_context.BinopPrecedence.erase(Proto.getOperatorName());
 			return nullptr;
 		}
 	}
 
-	//	if (Value* RetVal = Body->codegen())
+	//	if (Value* RetVal = Body->codegen(m_context, m_local_context))
 	//{
 	//	// Finish off the function.
 	//	LLVM_Builder.CreateRet(RetVal);
@@ -1440,44 +1500,10 @@ Value* FunctionAST::codegen()
 	verifyFunction(*TheFunction);
 
 	// Run the optimizer on the function.
-	LLVM_FPM->run(*TheFunction);
+	m_local_context.LLVM_FPM->run(*TheFunction);
 
 	return TheFunction;
 	//}
-}
-
-//===----------------------------------------------------------------------===//
-// Top-Level parsing and JIT Driver
-//===----------------------------------------------------------------------===//
-
-static void InitializeModuleAndPassManager()
-{
-	// Open a new module.
-	LLVM_Module = std::make_unique<Module>("my cool jit", LLVM_Context);
-	LLVM_Module->setDataLayout(shllJIT->getTargetMachine().createDataLayout());
-
-	// Create a new pass manager attached to it.
-	LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
-
-	LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
-	LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
-	LLVM_FPM->add(createSROAPass());
-	LLVM_FPM->add(createLoadStoreVectorizerPass());
-	LLVM_FPM->add(createLoopSimplifyCFGPass());
-	LLVM_FPM->add(createLoopVectorizePass());
-	LLVM_FPM->add(createLoopUnrollPass());
-	LLVM_FPM->add(createConstantPropagationPass());
-	LLVM_FPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
-	LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
-	LLVM_FPM->add(createReassociatePass());             // Reassociate expressions.
-	LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
-	LLVM_FPM->add(createDeadCodeEliminationPass());
-	LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
-	LLVM_FPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
-	LLVM_FPM->add(createSLPVectorizerPass());
-	LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
-
-	LLVM_FPM->doInitialization();
 }
 
 //===----------------------------------------------------------------------===//
@@ -1529,9 +1555,11 @@ int main()
 	InitializeNativeTargetAsmPrinter();
 	InitializeNativeTargetAsmParser();
 
-	shllJIT = std::make_unique<ShaderJIT>();
+	Context m_context;
+	LocalContext m_local_context(m_context);
+	Parser m_parser(m_local_context.BinopPrecedence);
 
-	InitializeModuleAndPassManager();
+	//InitializeModuleAndPassManager();
 
 	std::string source_code = R"(
 extern putchard(double x);
@@ -1574,18 +1602,18 @@ double main(double a1, double a2, double b1, double b2)
 
 	for (auto it = prototypes.begin(); it != prototypes.end(); ++it)
 	{
-		if (auto* FnIR = static_cast<Function*>((*it)->codegen()))
+		if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 		{
 			fprintf(stderr, "Read prototype: ");
 			FnIR->print(errs());
 			fprintf(stderr, "\n");
-			FunctionProtos[(*it)->getName()] = std::move((*it));
+			m_local_context.FunctionProtos[(*it)->getName()] = std::move((*it));
 		}
 	}
 
 	for (auto it = functions.begin(); it != functions.end(); ++it)
 	{
-		if (auto* FnIR = static_cast<Function*>((*it)->codegen()))
+		if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 		{
 			fprintf(stderr, "Read function definition:");
 			FnIR->print(errs());
@@ -1593,14 +1621,13 @@ double main(double a1, double a2, double b1, double b2)
 		}
 	}
 
-	LLVM_Module->dump();
-	shllJIT->addModule(std::move(LLVM_Module));
-	InitializeModuleAndPassManager();
+	m_local_context.LLVM_Module->dump();
+	m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));
 
-	auto ExprSymbol_ = shllJIT->findSymbol("test");
+	auto ExprSymbol_ = m_context.shllJIT->findSymbol("test");
 	auto ptr         = cantFail(ExprSymbol_.getAddress());
 
-	auto ExprSymbol = shllJIT->findSymbol("main");
+	auto ExprSymbol = m_context.shllJIT->findSymbol("main");
 	assert(ExprSymbol && "Function not found");
 
 	double (*FP)(double, double, double, double) = (double (*)(double, double, double, double))(intptr_t)cantFail(ExprSymbol.getAddress());

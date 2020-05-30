@@ -49,7 +49,7 @@ namespace slljit
 	protected:
 		std::string IdentifierStr;     // Filled in if tok_identifier
 		std::string TypeIdentifierStr; // Filled in if tok_type
-		double NumVal;                   // Filled in if tok_number
+		double NumVal;                 // Filled in if tok_number
 		std::string_view source_code;
 
 		int _getchar()
@@ -459,64 +459,6 @@ namespace slljit
 	//	static std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
 	//	static std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 	//	static std::map<char, int> BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
-
-	class Context
-	{
-	public:
-		LLVMContext LLVM_Context;
-		IRBuilder<> LLVM_Builder;
-		std::unique_ptr<ShaderJIT> shllJIT;
-
-	public:
-		Context()
-		    : LLVM_Builder(LLVM_Context)
-		{
-			shllJIT = std::make_unique<ShaderJIT>();
-		}
-	};
-
-	class LocalContext
-	{
-	public:
-		std::unique_ptr<Module> LLVM_Module;
-		std::map<std::string, AllocaInst*> NamedValues;
-		std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
-		std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
-		std::map<char, int> BinopPrecedence;
-
-	public:
-		LocalContext(Context& m_context)
-		{
-			BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
-
-			// Open a new module.
-			LLVM_Module = std::make_unique<Module>("my cool jit", m_context.LLVM_Context);
-			LLVM_Module->setDataLayout(m_context.shllJIT->getTargetMachine().createDataLayout());
-
-			// Create a new pass manager attached to it.
-			LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
-
-			LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
-			LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
-			LLVM_FPM->add(createSROAPass());
-			LLVM_FPM->add(createLoadStoreVectorizerPass());
-			LLVM_FPM->add(createLoopSimplifyCFGPass());
-			LLVM_FPM->add(createLoopVectorizePass());
-			LLVM_FPM->add(createLoopUnrollPass());
-			LLVM_FPM->add(createConstantPropagationPass());
-			LLVM_FPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
-			LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
-			LLVM_FPM->add(createReassociatePass());             // Reassociate expressions.
-			LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
-			LLVM_FPM->add(createDeadCodeEliminationPass());
-			LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
-			LLVM_FPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
-			LLVM_FPM->add(createSLPVectorizerPass());
-			LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
-
-			LLVM_FPM->doInitialization();
-		}
-	};
 
 	class Parser
 	{
@@ -1078,6 +1020,75 @@ namespace slljit
 	// Code Generation
 	//===----------------------------------------------------------------------===//
 
+	class Context
+	{
+	public:
+		LLVMContext LLVM_Context;
+		IRBuilder<> LLVM_Builder;
+		std::unique_ptr<ShaderJIT> shllJIT;
+
+	public:
+		Context()
+		    : LLVM_Builder(LLVM_Context)
+		{
+			shllJIT = std::make_unique<ShaderJIT>();
+		}
+	};
+
+	class LocalContext
+	{
+	public:
+		std::unique_ptr<Module> LLVM_Module;
+		std::map<std::string, AllocaInst*> NamedValues;
+		std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
+		std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
+		std::map<char, int> BinopPrecedence;
+		VModuleKey module_key;
+
+	public:
+		LocalContext(Context& m_context)
+		{
+			BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
+
+			// Open a new module.
+			LLVM_Module = std::make_unique<Module>("my cool jit", m_context.LLVM_Context);
+			LLVM_Module->setDataLayout(m_context.shllJIT->getTargetMachine().createDataLayout());
+
+			// Create a new pass manager attached to it.
+			LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
+
+			LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
+			LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
+			LLVM_FPM->add(createSROAPass());
+			LLVM_FPM->add(createLoadStoreVectorizerPass());
+			LLVM_FPM->add(createLoopSimplifyCFGPass());
+			LLVM_FPM->add(createLoopVectorizePass());
+			LLVM_FPM->add(createLoopUnrollPass());
+			LLVM_FPM->add(createConstantPropagationPass());
+			LLVM_FPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
+			LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
+			LLVM_FPM->add(createReassociatePass());             // Reassociate expressions.
+			LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
+			LLVM_FPM->add(createDeadCodeEliminationPass());
+			LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
+			LLVM_FPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
+			LLVM_FPM->add(createSLPVectorizerPass());
+			LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
+
+			LLVM_FPM->doInitialization();
+		}
+
+		void set_key(VModuleKey module_key)
+		{
+			this->module_key = module_key;
+		}
+
+		auto get_key()
+		{
+			return this->module_key;
+		}
+	};
+
 	Value* LogErrorV(const char* Str)
 	{
 		LogError(Str);
@@ -1379,7 +1390,7 @@ namespace slljit
 		for (unsigned i = 0, e = VarNames.size(); i != e; ++i)
 		{
 			const std::string& VarName = VarNames[i].first;
-			ExprAST* Init                = VarNames[i].second.get();
+			ExprAST* Init              = VarNames[i].second.get();
 
 			// Emit the initializer before adding the variable to scope, this prevents
 			// the initializer from referencing the variable itself, and permits stuff
@@ -1509,9 +1520,73 @@ namespace slljit
 		//}
 	}
 
-	//	CodeGen
+	class CodeGen
+	{
+	public:
+		void compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context);
+	};
 
-	
+	void CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context)
+	{
+		for (auto it = prototypes.begin(); it != prototypes.end(); ++it)
+		{
+			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
+			{
+				fprintf(stderr, "Read prototype: ");
+				FnIR->print(errs());
+				fprintf(stderr, "\n");
+				m_local_context.FunctionProtos[(*it)->getName()] = std::move((*it));
+			}
+		}
+
+		for (auto it = functions.begin(); it != functions.end(); ++it)
+		{
+			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
+			{
+				fprintf(stderr, "Read function definition:");
+				FnIR->print(errs());
+				fprintf(stderr, "\n");
+			}
+		}
+
+		m_local_context.LLVM_Module->dump();
+		auto key = m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));
+		m_local_context.set_key(key);
+	}
+
+	class Layout
+	{
+	};
+
+	class Program
+	{
+	private:
+		Context& m_context;
+		LocalContext m_local_context;
+
+	public:
+		Program(Context& m_context)
+		    : m_context(m_context)
+		    , m_local_context(m_context)
+		{
+		}
+		void compile(string body, Layout layout);
+	};
+
+	void Program::compile(string body, Layout layout)
+	{
+		Parser m_parser(m_local_context.BinopPrecedence);
+		CodeGen m_codegen;
+		m_parser.set_source(body);
+
+		m_parser.parse();
+
+		// TMP CODEGEN KERNEL
+		auto [prototypes, functions] = m_parser.get_ast();
+
+		m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context);
+	}
+
 } // namespace slljit
 
 //===----------------------------------------------------------------------===//
@@ -1562,8 +1637,7 @@ int main()
 	InitializeNativeTargetAsmParser();
 
 	Context m_context;
-	LocalContext m_local_context(m_context);
-	Parser m_parser(m_local_context.BinopPrecedence);
+	Program m_program(m_context);
 
 	//	InitializeModuleAndPassManager();
 
@@ -1599,36 +1673,7 @@ double main(double a1, double a2, double b1, double b2)
 	return a;
 }
 )";
-	m_parser.set_source(source_code);
-
-	m_parser.parse();
-
-	// TMP CODEGEN KERNEL
-	auto [prototypes, functions] = m_parser.get_ast();
-
-	for (auto it = prototypes.begin(); it != prototypes.end(); ++it)
-	{
-		if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
-		{
-			fprintf(stderr, "Read prototype: ");
-			FnIR->print(errs());
-			fprintf(stderr, "\n");
-			m_local_context.FunctionProtos[(*it)->getName()] = std::move((*it));
-		}
-	}
-
-	for (auto it = functions.begin(); it != functions.end(); ++it)
-	{
-		if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
-		{
-			fprintf(stderr, "Read function definition:");
-			FnIR->print(errs());
-			fprintf(stderr, "\n");
-		}
-	}
-
-	m_local_context.LLVM_Module->dump();
-	m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));
+	m_program.compile(source_code, Layout());
 
 	auto ExprSymbol_ = m_context.shllJIT->findSymbol("test");
 	auto ptr         = cantFail(ExprSymbol_.getAddress());

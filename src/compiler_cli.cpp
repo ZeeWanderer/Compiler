@@ -868,8 +868,8 @@ namespace slljit
 			// success.
 			getNextToken(); // eat ')'.
 
-			//	if (!Kind && FnName == "main" && ArgNames.size() != 0)
-			//	return LogErrorP("Invalid number of operands for main function");
+			if (!Kind && FnName == "main" && ArgNames.size() != 0)
+				return LogErrorP("Invalid number of operands for main function");
 
 			// Verify right number of names for operator.
 			if (Kind && ArgNames.size() != Kind)
@@ -1137,6 +1137,12 @@ namespace slljit
 	Value* VariableExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
 		// Look this variable up in the function.
+		GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(Name);
+		if (gVar)
+		{
+			return m_context.LLVM_Builder.CreateLoad(gVar, Name);
+		}
+
 		Value* V = m_local_context.NamedValues[Name];
 		if (!V)
 			return LogErrorV("Unknown variable name");
@@ -1175,7 +1181,18 @@ namespace slljit
 			if (!Val)
 				return nullptr;
 
-			// Look up the name.
+			// Look up global
+			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(LHSE->getName());
+			if (gVar)
+			{
+				if (gVar->isConstant())
+					return LogErrorV("Trying to store in constant global");
+
+				m_context.LLVM_Builder.CreateStore(Val, gVar);
+				return Val;
+			}
+
+			// Look up variable.
 			Value* Variable = m_local_context.NamedValues[LHSE->getName()];
 			if (!Variable)
 				return LogErrorV("Unknown variable name");
@@ -1520,11 +1537,136 @@ namespace slljit
 		//}
 	}
 
+	class Layout;
+
 	class CodeGen
 	{
 	public:
+		void compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout);
 		void compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context);
 	};
+
+	enum LayoutVarTypes
+	{
+		Kdouble = 0
+	};
+
+	struct GlobalDefinition
+	{
+		LayoutVarTypes type;
+		size_t offset;
+	};
+
+	struct ConstantGlobalDefinition
+	{
+		double value;
+		LayoutVarTypes type;
+	};
+
+	class Layout
+	{
+	public:
+		set<string> names;
+		map<string, GlobalDefinition> globals;
+		map<string, struct ConstantGlobalDefinition> constant_globals;
+		void addMember(string name, LayoutVarTypes type, size_t offset)
+		{
+			globals.emplace(pair{name, GlobalDefinition{type, offset}});
+			names.insert(name);
+		}
+
+		void addConsatantMember(string name, double value, LayoutVarTypes type)
+		{
+			constant_globals.emplace(pair{name, ConstantGlobalDefinition{value, type}});
+			names.insert(name);
+		}
+	};
+
+	class Program
+	{
+	private:
+		Context& m_context;
+		LocalContext m_local_context;
+		Layout m_layout;
+		vector<pair<intptr_t, GlobalDefinition>> runtime_globals;
+		double (*main_func)() = nullptr;
+
+	public:
+		Program(Context& m_context)
+		    : m_context(m_context)
+		    , m_local_context(m_context)
+		{
+		}
+		void compile(string body, Layout layout);
+		double run(intptr_t data);
+	};
+
+	void Program::compile(string body, Layout layout)
+	{
+		m_layout = layout;
+		Parser m_parser(m_local_context.BinopPrecedence);
+		CodeGen m_codegen;
+		m_parser.set_source(body);
+
+		m_parser.parse();
+
+		// TMP CODEGEN KERNEL
+		auto [prototypes, functions] = m_parser.get_ast();
+		m_codegen.compile_layout(m_context, m_local_context, m_layout);
+		m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context);
+
+		runtime_globals.reserve(m_layout.globals.size());
+		for (auto& global : m_layout.globals)
+		{
+			auto symbol = m_context.shllJIT->findSymbol(global.first, m_local_context.module_key);
+			auto ptr    = (intptr_t)cantFail(symbol.getAddress());
+			runtime_globals.emplace_back(pair{ptr, global.second});
+		}
+		auto symbol = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
+		main_func   = (double (*)())(intptr_t)cantFail(symbol.getAddress());
+	}
+
+	double Program::run(intptr_t data)
+	{
+		// TODO: generate loader in llvm as offsets are known at compile time
+		for (auto& global : runtime_globals)
+		{
+			auto value_ptr  = reinterpret_cast<double*>(data + global.second.offset);
+			auto value      = *value_ptr;
+			auto global_ptr = reinterpret_cast<double*>(global.first);
+			*global_ptr     = value;
+		}
+		auto retval = main_func();
+
+		// TODO: mutate globals directly from llvm instead of this copyback.
+		//	To do that make global a pointer and store there a pointer to struct.
+		for (auto& global : runtime_globals)
+		{
+			auto value_ptr  = reinterpret_cast<double*>(data + global.second.offset);
+			auto global_ptr = reinterpret_cast<double*>(global.first);
+			*value_ptr      = *global_ptr;
+		}
+		return retval;
+	}
+
+	void CodeGen::compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout)
+	{
+		for (auto& global : m_layout.constant_globals)
+		{
+			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, Type::getDoubleTy(m_context.LLVM_Context));
+			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.first);
+			gVar->setLinkage(GlobalValue::ExternalLinkage);
+			gVar->setInitializer(ConstantFP::get(m_context.LLVM_Context, APFloat(global.second.value)));
+			gVar->setConstant(true);
+		}
+		for (auto& global : m_layout.globals)
+		{
+			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, Type::getDoubleTy(m_context.LLVM_Context));
+			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.first);
+			gVar->setLinkage(GlobalValue::ExternalLinkage);
+			gVar->setInitializer(ConstantFP::get(m_context.LLVM_Context, APFloat(0.0)));
+		}
+	}
 
 	void CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context)
 	{
@@ -1552,39 +1694,6 @@ namespace slljit
 		m_local_context.LLVM_Module->dump();
 		auto key = m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));
 		m_local_context.set_key(key);
-	}
-
-	class Layout
-	{
-	};
-
-	class Program
-	{
-	private:
-		Context& m_context;
-		LocalContext m_local_context;
-
-	public:
-		Program(Context& m_context)
-		    : m_context(m_context)
-		    , m_local_context(m_context)
-		{
-		}
-		void compile(string body, Layout layout);
-	};
-
-	void Program::compile(string body, Layout layout)
-	{
-		Parser m_parser(m_local_context.BinopPrecedence);
-		CodeGen m_codegen;
-		m_parser.set_source(body);
-
-		m_parser.parse();
-
-		// TMP CODEGEN KERNEL
-		auto [prototypes, functions] = m_parser.get_ast();
-
-		m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context);
 	}
 
 } // namespace slljit
@@ -1630,6 +1739,12 @@ std::string hexStr(unsigned char* data, int len)
 
 	return ss.str();
 }
+
+struct Data
+{
+	double x;
+};
+
 int main()
 {
 	InitializeNativeTarget();
@@ -1638,7 +1753,9 @@ int main()
 
 	Context m_context;
 	Program m_program(m_context);
-
+	Layout m_layout;
+	m_layout.addMember("x", ::Kdouble, offsetof(Data, x));
+	m_layout.addConsatantMember("v", 5, ::Kdouble);
 	//	InitializeModuleAndPassManager();
 
 	std::string source_code = R"(
@@ -1649,45 +1766,18 @@ double test(double a1, double a2, double b1, double b2,  double c1, double c2,  
 	double c = a1+a2+b1+b2+c1+c2+d1+d2;
 	return c;
 }
-double main(double a1, double a2, double b1, double b2)
+double main()
 {
-	double a = a1*(a1 + b1);
-	if(a>0)
-	{
-		a = 0;
-	}
-	else
-	{
-		a = 15;
-	}
-	for(double b = 0; b < 3; b = b + 1)
-	{
-		a = a + 2;
-	}
-
-	for(; b < 15; b = b + 1)
-	{
-		a = a + 2;
-	}
-
+	double a = x+v*2;
+	x = 4;
 	return a;
 }
 )";
-	m_program.compile(source_code, Layout());
+	m_program.compile(source_code, m_layout);
 
-	auto ExprSymbol_ = m_context.shllJIT->findSymbol("test");
-	auto ptr         = cantFail(ExprSymbol_.getAddress());
+	Data data{3.0};
 
-	auto ExprSymbol = m_context.shllJIT->findSymbol("main");
-	assert(ExprSymbol && "Function not found");
-
-	double (*FP)(double, double, double, double) = (double (*)(double, double, double, double))(intptr_t)cantFail(ExprSymbol.getAddress());
-	fprintf(stderr, "Evaluated to %f\n", FP(1, 1, -4, 4));
-
-	auto base_str = hexStr((unsigned char*)&FP, sizeof(FP));
-	std::cout << base_str << std::endl;
-	auto bodystr = hexStr((unsigned char*)FP, 150);
-	std::cout << bodystr << std::endl;
+	auto retval = m_program.run((intptr_t)&data);
 
 	return 0;
 }

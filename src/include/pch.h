@@ -28,6 +28,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetIntrinsicInfo.h"
 #include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/AggressiveInstCombine/AggressiveInstCombine.h"
 #include "llvm/Transforms/Vectorize.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"

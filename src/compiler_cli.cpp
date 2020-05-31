@@ -20,6 +20,20 @@ namespace slljit
 	using namespace llvm;
 	using namespace llvm::orc;
 	using namespace std;
+
+	static void init__()
+	{
+		static bool b_once = true;
+		if (b_once)
+		{
+
+			InitializeNativeTarget();
+			InitializeNativeTargetAsmPrinter();
+			InitializeNativeTargetAsmParser();
+			b_once = false;
+		}
+	}
+
 	//===----------------------------------------------------------------------===//
 	// Lexer
 	//===----------------------------------------------------------------------===//
@@ -182,6 +196,11 @@ namespace slljit
 			return false;
 		}
 
+		virtual bool bIsTerminator()
+		{
+			return false;
+		}
+
 		virtual Value* codegen(Context& m_context, LocalContext& m_local_context) = 0;
 	};
 
@@ -258,6 +277,8 @@ namespace slljit
 		    : Operand(std::move(Operand))
 		{
 		}
+
+		virtual bool bIsTerminator() override;
 
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
@@ -560,6 +581,7 @@ namespace slljit
 			// return expression
 			if (IdName == "return")
 			{
+				//	getNextToken(); // eat return.
 				auto expr = ParseExpression();
 				return std::make_unique<ReturnExprAST>(std::move(expr));
 			}
@@ -1031,6 +1053,7 @@ namespace slljit
 		Context()
 		    : LLVM_Builder(LLVM_Context)
 		{
+			init__();
 			shllJIT = std::make_unique<ShaderJIT>();
 		}
 	};
@@ -1048,7 +1071,7 @@ namespace slljit
 	public:
 		LocalContext(Context& m_context)
 		{
-			BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
+			BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};
 
 			// Open a new module.
 			LLVM_Module = std::make_unique<Module>("my cool jit", m_context.LLVM_Context);
@@ -1065,13 +1088,15 @@ namespace slljit
 			LLVM_FPM->add(createLoopVectorizePass());
 			LLVM_FPM->add(createLoopUnrollPass());
 			LLVM_FPM->add(createConstantPropagationPass());
-			LLVM_FPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
+			LLVM_FPM->add(createGVNPass());                     //	Eliminate Common SubExpressions.
 			LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
-			LLVM_FPM->add(createReassociatePass());             // Reassociate expressions.
+			LLVM_FPM->add(createReassociatePass());             //	Reassociate expressions.
 			LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	Inline standard calls
 			LLVM_FPM->add(createDeadCodeEliminationPass());
+			LLVM_FPM->add(createAggressiveDCEPass());
 			LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
-			LLVM_FPM->add(createInstructionCombiningPass()); // Do simple "peephole" optimizations and bit-twiddling optzns.
+			LLVM_FPM->add(createInstructionCombiningPass()); //	Do simple "peephole" optimizations and bit-twiddling optzns.
+			//	LLVM_FPM->add(createAggressiveInstCombinerPass());
 			LLVM_FPM->add(createSLPVectorizerPass());
 			LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
 
@@ -1144,6 +1169,7 @@ namespace slljit
 				return m_context.LLVM_Builder.CreateLoad(gVar, Name);
 			else
 			{
+				// TODO: load a single time
 				auto ptr = m_context.LLVM_Builder.CreateLoad(gVar, Name);
 				return m_context.LLVM_Builder.CreateLoad(ptr, Name);
 			}
@@ -1195,7 +1221,7 @@ namespace slljit
 					return LogErrorV("Trying to store in constant global");
 
 				auto ptr = m_context.LLVM_Builder.CreateLoad(gVar, LHSE->getName());
-				//Value* gep = m_context.LLVM_Builder.CreateGEP(Type::getDoubleTy(m_context.LLVM_Context), ptr, m_context.LLVM_Builder.getInt32(0), "ptr_");
+				//	Value* gep = m_context.LLVM_Builder.CreateGEP(Type::getDoubleTy(m_context.LLVM_Context), ptr, m_context.LLVM_Builder.getInt32(0), "ptr_");
 				m_context.LLVM_Builder.CreateStore(Val, ptr);
 				return Val;
 			}
@@ -1219,6 +1245,7 @@ namespace slljit
 		case '+': return m_context.LLVM_Builder.CreateFAdd(L, R, "addtmp");
 		case '-': return m_context.LLVM_Builder.CreateFSub(L, R, "subtmp");
 		case '*': return m_context.LLVM_Builder.CreateFMul(L, R, "multmp");
+		case '/': return m_context.LLVM_Builder.CreateFDiv(L, R, "divtmp");
 		case '<':
 			L = m_context.LLVM_Builder.CreateFCmpULT(L, R, "cmptmp");
 			// Convert bool 0/1 to double 0.0 or 1.0
@@ -1268,6 +1295,19 @@ namespace slljit
 
 	Value* IfExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
+		Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
+
+		// Create blocks for the then and else cases.  Insert the 'then' block at the
+		// end of the function.
+		//	BasicBlock* cont_calcBB = BasicBlock::Create(m_context.LLVM_Context, "cond_calc", TheFunction);
+		BasicBlock* IfBB    = BasicBlock::Create(m_context.LLVM_Context, "if", TheFunction);
+		BasicBlock* ElseBB  = BasicBlock::Create(m_context.LLVM_Context, "else", TheFunction);
+		BasicBlock* MergeBB = BasicBlock::Create(m_context.LLVM_Context, "ifcont", TheFunction);
+
+		//	m_context.LLVM_Builder.CreateBr(cont_calcBB);
+
+		//	m_context.LLVM_Builder.SetInsertPoint(cont_calcBB);
+
 		Value* CondV = Cond->codegen(m_context, m_local_context);
 		if (!CondV)
 			return nullptr;
@@ -1275,51 +1315,57 @@ namespace slljit
 		// Convert condition to a bool by comparing non-equal to 0.0.
 		CondV = m_context.LLVM_Builder.CreateFCmpONE(CondV, ConstantFP::get(m_context.LLVM_Context, APFloat(0.0)), "ifcond");
 
-		Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
-
-		// Create blocks for the then and else cases.  Insert the 'then' block at the
-		// end of the function.
-		BasicBlock* IfBB    = BasicBlock::Create(m_context.LLVM_Context, "if", TheFunction);
-		BasicBlock* ElseBB  = BasicBlock::Create(m_context.LLVM_Context, "else");
-		BasicBlock* MergeBB = BasicBlock::Create(m_context.LLVM_Context, "ifcont");
-
 		m_context.LLVM_Builder.CreateCondBr(CondV, IfBB, ElseBB);
 
 		// Emit then value.
 		m_context.LLVM_Builder.SetInsertPoint(IfBB);
 
-		for (auto& then_expr : Then)
 		{
-			then_expr->codegen(m_context, m_local_context);
+
+			bool isTerminated = false;
+			for (auto& then_expr : Then)
+			{
+				then_expr->codegen(m_context, m_local_context);
+				if (then_expr->bIsTerminator())
+				{
+					isTerminated = true;
+					break;
+				}
+			}
+
+			if (!isTerminated)
+				m_context.LLVM_Builder.CreateBr(MergeBB);
 		}
-
-		//	Value* ThenV = Then->codegen(m_context, m_local_context);
-		//	if (!ThenV)
-		//	return nullptr;
-
-		m_context.LLVM_Builder.CreateBr(MergeBB);
 		// Codegen of 'Then' can change the current block, update IfBB for the PHI.
-		IfBB = m_context.LLVM_Builder.GetInsertBlock();
+		//	IfBB = m_context.LLVM_Builder.GetInsertBlock();
 
 		// Emit else block.
-		TheFunction->getBasicBlockList().push_back(ElseBB);
+		//	TheFunction->getBasicBlockList().push_back(ElseBB);
 		m_context.LLVM_Builder.SetInsertPoint(ElseBB);
 
-		for (auto& else_expr : Else)
 		{
-			else_expr->codegen(m_context, m_local_context);
+			bool isTerminated = false;
+			for (auto& else_expr : Else)
+			{
+				else_expr->codegen(m_context, m_local_context);
+				if (else_expr->bIsTerminator())
+				{
+					isTerminated = true;
+					break;
+				}
+			}
+
+			//	Value* ElseV = Else->codegen(m_context, m_local_context);
+			//	if (!ElseV)
+			//	return nullptr;
+			if (!isTerminated)
+				m_context.LLVM_Builder.CreateBr(MergeBB);
 		}
-
-		//	Value* ElseV = Else->codegen(m_context, m_local_context);
-		//	if (!ElseV)
-		//	return nullptr;
-
-		m_context.LLVM_Builder.CreateBr(MergeBB);
 		// Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-		ElseBB = m_context.LLVM_Builder.GetInsertBlock();
+		//	ElseBB = m_context.LLVM_Builder.GetInsertBlock();
 
 		// Emit merge block.
-		TheFunction->getBasicBlockList().push_back(MergeBB);
+		//	TheFunction->getBasicBlockList().push_back(MergeBB);
 		m_context.LLVM_Builder.SetInsertPoint(MergeBB);
 		//	PHINode* PN = LLVM_Builder.CreatePHI(Type::getDoubleTy(LLVM_Context), 2, "iftmp");
 
@@ -1475,6 +1521,11 @@ namespace slljit
 		return F;
 	}
 
+	bool ReturnExprAST::bIsTerminator()
+	{
+		return true;
+	}
+
 	Value* ReturnExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
 		if (Value* RetVal = Operand->codegen(m_context, m_local_context))
@@ -1581,7 +1632,7 @@ namespace slljit
 		map<string, struct ConstantGlobalDefinition> constant_globals;
 		void addMember(string name, LayoutVarTypes type, size_t offset)
 		{
-			globals.emplace_back(GlobalDefinition{name,type, offset});
+			globals.emplace_back(GlobalDefinition{name, type, offset});
 			names.insert(name);
 			global_offsets.emplace_back(offset);
 		}
@@ -1596,13 +1647,13 @@ namespace slljit
 	template <class T>
 	class Program
 	{
-	private:
+	protected:
 		Context& m_context;
 		LocalContext m_local_context;
 		Layout m_layout;
-		//vector<pair<intptr_t, GlobalDefinition>> runtime_globals;
+		//	vector<pair<intptr_t, GlobalDefinition>> runtime_globals;
 		double (*main_func)() = nullptr;
-		void (*loader__)(T*) = nullptr;
+		void (*loader__)(T*)  = nullptr;
 
 	public:
 		Program(Context& m_context)
@@ -1626,16 +1677,15 @@ namespace slljit
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
 			gVar->setInitializer(ConstantPointerNull::get(Type::getDoublePtrTy(m_context.LLVM_Context)));
 
-			//indices.emplace_back(ConstantInt::get(m_context.LLVM_Context, APInt(32, struct_idx, true)));
+			//	indices.emplace_back(ConstantInt::get(m_context.LLVM_Context, APInt(32, struct_idx, true)));
 
 			switch (global.type)
 			{
 			case ::Kdouble: StructMembers.emplace_back(Type::getDoubleTy(m_context.LLVM_Context));
 			default: break;
 			}
-
 		}
-		
+
 		auto loader_struct_type = StructType::create(m_context.LLVM_Context, StructMembers, "layout__", false);
 
 		// generate loader function
@@ -1645,14 +1695,14 @@ namespace slljit
 		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, "__layout_loader_", m_local_context.LLVM_Module.get());
 
 		// Set names for all arguments.
-		auto arg = TheFunction->arg_begin();
+		auto arg            = TheFunction->arg_begin();
 		Value* data_pointer = arg;
 		arg->setName("data_ptr");
 
 		BasicBlock* BB = BasicBlock::Create(m_context.LLVM_Context, "entry", TheFunction);
 		m_context.LLVM_Builder.SetInsertPoint(BB);
-		
-		auto& g_list                = m_local_context.LLVM_Module->getGlobalList();
+
+		auto& g_list = m_local_context.LLVM_Module->getGlobalList();
 		std::vector<Value*> indices{m_context.LLVM_Builder.getInt32(0), m_context.LLVM_Builder.getInt32(0)};
 		uint32_t idx = 0;
 		for (auto& g_var : g_list)
@@ -1702,7 +1752,7 @@ namespace slljit
 		m_local_context.set_key(key);
 	}
 
-template <class T>
+	template <class T>
 	inline void Program<T>::compile(string body, Layout layout)
 	{
 		m_layout = layout;
@@ -1783,9 +1833,6 @@ struct Data
 
 int main()
 {
-	InitializeNativeTarget();
-	InitializeNativeTargetAsmPrinter();
-	InitializeNativeTargetAsmParser();
 
 	Context m_context;
 	Program<Data> m_program(m_context);
@@ -1796,23 +1843,36 @@ int main()
 	//	InitializeModuleAndPassManager();
 
 	std::string source_code = R"(
-extern putchard(double x);
-extern printd(double x);
-double test(double a1, double a2, double b1, double b2,  double c1, double c2,  double d1, double d2)
-{
-	double c = a1+a2+b1+b2+c1+c2+d1+d2;
-	return c;
-}
-double main()
-{
-	double a = x+v*2;
-	double h = x;
-	printd(h);
-	x = 4;
-	y = 5;
-	printd(h);
-	return a;
-}
+	extern putchard(double x);
+	extern printd(double x);
+	double max(double left, double right)
+	{
+		if(left > right)
+		{
+			return left;
+		}
+		return right;
+	}
+	double main()
+	{
+		double a = x+v*2;
+		double b = x*v*2 + a;
+		double d = x+v+2 + b;
+		double e = x - v + 2 + d;
+		for(; b<400; b = b+1)
+		{
+			e = e + 2;
+		}
+		x = 4;
+		double h = x;
+		printd(h);
+		printd(h);
+		printd(h);
+		double t = max(a, e);
+		x = 5/2;
+		y = 5;
+		return max(t, 3);
+	}
 )";
 	m_program.compile(source_code, m_layout);
 

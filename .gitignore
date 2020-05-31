@@ -31,6 +31,7 @@
 *.wav
 
 /doc
+/doc_
 /build
 /out
 /Intermediate

@@ -353,7 +353,6 @@ namespace slljit
 			return LogErrorEX("Expected {");
 
 		getNextToken(); // Eat {
-
 		ExprList e_list;
 		while (true)
 		{
@@ -521,5 +520,4 @@ namespace slljit
 	}
 
 	/// top ::= definition | external | expression | ';'
-
 }; // namespace slljit

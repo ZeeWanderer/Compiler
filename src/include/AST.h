@@ -20,7 +20,6 @@ namespace slljit
 
 	// namespace
 	//{
-
 	/// ExprAST - Base class for all expression nodes.
 	class ExprAST
 	{
@@ -49,7 +48,6 @@ namespace slljit
 
 	class NoOpAST : public ExprAST
 	{
-
 	public:
 		NoOpAST()
 		{
@@ -326,5 +324,4 @@ namespace slljit
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
 	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, Context& m_context, LocalContext& m_local_context);
-
 }; // namespace slljit

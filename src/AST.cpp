@@ -10,7 +10,6 @@ using namespace std;
 
 namespace slljit
 {
-
 	Value* BinaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
 		// Special case '=' because we don't want to emit the LHS as an expression.
@@ -245,7 +244,6 @@ namespace slljit
 		m_context.LLVM_Builder.SetInsertPoint(IfBB);
 
 		{
-
 			bool isTerminated = false;
 			for (auto& then_expr : Then)
 			{

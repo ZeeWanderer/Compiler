@@ -168,7 +168,6 @@ namespace slljit
 		CompileLayerT CompileLayer;
 		std::vector<VModuleKey> ModuleKeys;
 	};
-
 }; // namespace slljit
 
 #endif // LLVM_EXECUTIONENGINE_ORC_SHADERJIT_H

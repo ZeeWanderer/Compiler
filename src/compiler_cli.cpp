@@ -27,14 +27,11 @@ namespace slljit
 	//===----------------------------------------------------------------------===//
 	// Code Generation
 	//===----------------------------------------------------------------------===//
-
-	
-
 }; // namespace slljit
 
-//===----------------------------------------------------------------------===//
-// "Library" functions that can be "extern'd" from user code.
-//===----------------------------------------------------------------------===//
+	//===----------------------------------------------------------------------===//
+	// "Library" functions that can be "extern'd" from user code.
+	//===----------------------------------------------------------------------===//
 
 #ifdef _WIN32
 #define DLLEXPORT __declspec(dllexport)
@@ -82,14 +79,12 @@ struct Data
 
 int main()
 {
-
 	Context m_context;
 	Program<Data> m_program(m_context);
 	Layout m_layout;
 	m_layout.addMember("x", ::Kdouble, offsetof(Data, x));
 	m_layout.addMember("y", ::Kdouble, offsetof(Data, y));
 	m_layout.addConsatantMember("v", 5, ::Kdouble);
-	//	InitializeModuleAndPassManager();
 
 	std::string source_code = R"(
 	extern putchard(double x);
@@ -108,15 +103,19 @@ int main()
 		double b = x*v*2 + a;
 		double d = x+v+2 + b;
 		double e = x - v + 2 + d;
-		for(; b<400; b = b+1)
+		for(double idx0 = 0; idx0<400; idx0 = idx0+1)
+		{
+			e = e + 2;
+		}
+		for(; idx0<801; idx0 = idx0+2)
 		{
 			e = e + 2;
 		}
 		x = 4;
-		double h = x;
-		printd(h);
-		printd(h);
-		printd(h);
+		double h_ = x;
+		printd(h_);
+		printd(h_);
+		printd(h_);
 		double t = max(a, e);
 		x = 5/2;
 		y = 5;

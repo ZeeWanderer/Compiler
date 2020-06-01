@@ -13,7 +13,6 @@ namespace slljit
 		static bool b_once = true;
 		if (b_once)
 		{
-
 			InitializeNativeTarget();
 			InitializeNativeTargetAsmPrinter();
 			InitializeNativeTargetAsmParser();
@@ -40,14 +39,14 @@ namespace slljit
 		LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
 		LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
 		LLVM_FPM->add(createSROAPass());
-		LLVM_FPM->add(createLoadStoreVectorizerPass());
 		LLVM_FPM->add(createLoopSimplifyCFGPass());
+		LLVM_FPM->add(createLoadStoreVectorizerPass());
 		LLVM_FPM->add(createLoopVectorizePass());
 		LLVM_FPM->add(createLoopUnrollPass());
+		LLVM_FPM->add(createGVNPass());         //	Eliminate Common SubExpressions.
+		LLVM_FPM->add(createNewGVNPass());      //	Global value numbering
+		LLVM_FPM->add(createReassociatePass()); //	Reassociate expressions.
 		LLVM_FPM->add(createConstantPropagationPass());
-		LLVM_FPM->add(createGVNPass());                     //	Eliminate Common SubExpressions.
-		LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
-		LLVM_FPM->add(createReassociatePass());             //	Reassociate expressions.
 		LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	standard calls
 		LLVM_FPM->add(createDeadCodeEliminationPass());
 		LLVM_FPM->add(createAggressiveDCEPass());

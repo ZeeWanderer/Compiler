@@ -23,5 +23,4 @@ namespace slljit
 		void compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout);
 		void compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context);
 	};
-
 }; // namespace slljit

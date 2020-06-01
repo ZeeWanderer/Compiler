@@ -1,5 +1,5 @@
 #pragma once
-//TODO: remove pch,h
+// TODO: remove pch,h
 #include "pch.h"
 #include "JIT.h"
 #include "AST.h"

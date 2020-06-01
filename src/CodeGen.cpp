@@ -9,7 +9,6 @@ using namespace std;
 
 namespace slljit
 {
-
 	void CodeGen::compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout)
 	{
 		std::vector<Type*> StructMembers;

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef LLVM_EXECUTIONENGINE_ORC_SHADERJIT_H
 #define LLVM_EXECUTIONENGINE_ORC_SHADERJIT_H
 
@@ -167,6 +169,6 @@ namespace slljit
 		std::vector<VModuleKey> ModuleKeys;
 	};
 
-} // namespace slljit
+}; // namespace slljit
 
 #endif // LLVM_EXECUTIONENGINE_ORC_SHADERJIT_H

@@ -116,10 +116,23 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="src\AST.cpp" />
+    <ClCompile Include="src\CodeGen.cpp" />
+    <ClCompile Include="src\Context.cpp" />
+    <ClCompile Include="src\Layout.cpp" />
+    <ClCompile Include="src\Parser.cpp" />
+    <ClCompile Include="src\Tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/include/JIT.h" />
     <ClInclude Include="src/include/pch.h" />
+    <ClInclude Include="src\include\AST.h" />
+    <ClInclude Include="src\include\CodeGen.h" />
+    <ClInclude Include="src\include\Context.h" />
+    <ClInclude Include="src\include\Layout.h" />
+    <ClInclude Include="src\include\Parser.h" />
+    <ClInclude Include="src\include\Program.hpp" />
+    <ClInclude Include="src\include\Tokenizer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

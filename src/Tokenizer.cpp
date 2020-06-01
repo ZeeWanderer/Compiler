@@ -8,7 +8,15 @@ using namespace std;
 
 namespace slljit
 {
-	int Tokenizer::_getchar()
+	const set<char> Tokenizer::identifier_start_charset = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C',
+	    'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_'};
+
+	const set<char> Tokenizer::identifier_charset = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D',
+	    'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'};
+	
+	const map<string, Token> Tokenizer::reserved_identifier_set = {{"extern", tok_extern}, {"if", tok_if}, {"else", tok_else}, {"for", tok_for}};
+
+	inline int Tokenizer::_getchar()
 	{
 		static size_t source_idx = 0;
 		if (source_idx < source_code.size())
@@ -21,6 +29,26 @@ namespace slljit
 		}
 	}
 
+	inline pair<bool, Token> Tokenizer::is_reserved_command_id(string c)
+	{
+		auto it = reserved_identifier_set.find(c);
+		if (it != reserved_identifier_set.end())
+		{
+			return {true, it->second};
+		}
+		return {false, tok_eof};
+	}
+
+	inline bool Tokenizer::is_id_start_char(int c)
+	{
+		return identifier_start_charset.find(c) != identifier_start_charset.end();
+	}
+
+	inline bool Tokenizer::is_id_char(int c)
+	{
+		return identifier_charset.find(c) != identifier_charset.end();
+	}
+
 	void Tokenizer::set_source(std::string_view source)
 	{
 		this->source_code = source;
@@ -28,15 +56,14 @@ namespace slljit
 
 	int Tokenizer::gettok()
 	{
-
 		// Skip any whitespace.
 		while (isspace(LastChar))
 			LastChar = _getchar();
 
-		if (isalpha(LastChar))
-		{ // identifier: [a-zA-Z][a-zA-Z0-9]*
+		if (is_id_start_char(LastChar))
+		{ // identifier: [a-zA-Z_][a-zA-Z0-9_]*
 			IdentifierStr = LastChar;
-			while (isalnum((LastChar = _getchar())))
+			while (is_id_char((LastChar = _getchar())))
 				IdentifierStr += LastChar;
 
 			// BASIC TYPES
@@ -47,14 +74,12 @@ namespace slljit
 			}
 
 			// COMMANDS
-			if (IdentifierStr == "extern")
-				return tok_extern;
-			if (IdentifierStr == "if")
-				return tok_if;
-			if (IdentifierStr == "else")
-				return tok_else;
-			if (IdentifierStr == "for")
-				return tok_for;
+			{
+				auto [is_command, cmd_tok] = is_reserved_command_id(IdentifierStr);
+				if (is_command)
+					return cmd_tok;
+			}
+
 			return tok_identifier;
 		}
 

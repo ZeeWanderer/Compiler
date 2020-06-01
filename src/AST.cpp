@@ -494,8 +494,10 @@ namespace slljit
 		// Validate the generated code, checking for consistency.
 		verifyFunction(*TheFunction);
 
+		m_local_context.LLVM_FPM->doInitialization();
 		// Run the optimizer on the function.
 		m_local_context.LLVM_FPM->run(*TheFunction);
+		m_local_context.LLVM_FPM->doFinalization();
 
 		return TheFunction;
 		//}

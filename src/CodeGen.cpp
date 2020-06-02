@@ -73,9 +73,9 @@ namespace slljit
 		{
 			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 			{
-				//fprintf(stderr, "Read prototype: ");
-				//FnIR->print(errs());
-				//fprintf(stderr, "\n");
+				//	fprintf(stderr, "Read prototype: ");
+				//	FnIR->print(errs());
+				//	fprintf(stderr, "\n");
 				m_local_context.FunctionProtos[(*it)->getName()] = std::move((*it));
 			}
 		}
@@ -84,15 +84,15 @@ namespace slljit
 		{
 			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 			{
-				//fprintf(stderr, "Read function definition:");
-				//FnIR->print(errs());
+				//	fprintf(stderr, "Read function definition:");
+				//	FnIR->print(errs());
 				fprintf(stderr, "\n");
 			}
 		}
-		//fprintf(stderr, "Module:\n");
+		//	fprintf(stderr, "Module:\n");
 		m_local_context.LLVM_PM->run(*m_local_context.LLVM_Module.get());
 		m_local_context.LLVM_Module->dump();
-		
+
 		auto key = m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));
 		m_local_context.set_key(key);
 	}

@@ -35,7 +35,7 @@ namespace slljit
 
 		// Create a new pass manager attached to it.
 		LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
-		LLVM_PM = std::make_unique<legacy::PassManager>();
+		LLVM_PM  = std::make_unique<legacy::PassManager>();
 
 		LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
 		LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
@@ -57,27 +57,27 @@ namespace slljit
 		LLVM_FPM->add(createSLPVectorizerPass());
 		LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
 
-		//LLVM_FPM->add(createCFGSimplificationPass());
-		//LLVM_FPM->add(createPromoteMemoryToRegisterPass());
-		//LLVM_FPM->add(createEarlyCSEPass());
-		//LLVM_FPM->add(createTailCallEliminationPass());
-		//LLVM_FPM->add(createInstructionCombiningPass());
-		//LLVM_FPM->add(createBasicAAWrapperPass());
+		//	LLVM_FPM->add(createCFGSimplificationPass());
+		//	LLVM_FPM->add(createPromoteMemoryToRegisterPass());
+		//	LLVM_FPM->add(createEarlyCSEPass());
+		//	LLVM_FPM->add(createTailCallEliminationPass());
+		//	LLVM_FPM->add(createInstructionCombiningPass());
+		//	LLVM_FPM->add(createBasicAAWrapperPass());
 		////LLVM_FPM->add(new MemoryDependenceAnalysis());
-		//LLVM_FPM->add(createLICMPass());
-		//LLVM_FPM->add(createLoopInstSimplifyPass());
-		//LLVM_FPM->add(createNewGVNPass());
-		//LLVM_FPM->add(createDeadStoreEliminationPass());
-		//LLVM_FPM->add(createSCCPPass());
-		//LLVM_FPM->add(createReassociatePass());
-		//LLVM_FPM->add(createInstructionCombiningPass());
+		//	LLVM_FPM->add(createLICMPass());
+		//	LLVM_FPM->add(createLoopInstSimplifyPass());
+		//	LLVM_FPM->add(createNewGVNPass());
+		//	LLVM_FPM->add(createDeadStoreEliminationPass());
+		//	LLVM_FPM->add(createSCCPPass());
+		//	LLVM_FPM->add(createReassociatePass());
+		//	LLVM_FPM->add(createInstructionCombiningPass());
 		////LLVM_FPM->add(createInstructionSimplifierPass());
-		//LLVM_FPM->add(createAggressiveDCEPass());
-		//LLVM_FPM->add(createCFGSimplificationPass());
-		//LLVM_FPM->add(createLintPass()); // Check
+		//	LLVM_FPM->add(createAggressiveDCEPass());
+		//	LLVM_FPM->add(createCFGSimplificationPass());
+		//	LLVM_FPM->add(createLintPass()); // Check
 
-		//Remove unused functions, structs, global variables, etc
-		//LLVM_PM->add(createStripDeadPrototypesPass());
+		//	Remove unused functions, structs, global variables, etc
+		//	LLVM_PM->add(createStripDeadPrototypesPass());
 		LLVM_PM->add(createFunctionInliningPass());
 		LLVM_PM->add(createDeadInstEliminationPass());
 	}

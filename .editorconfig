@@ -1,0 +1,8 @@
+root = true
+
+[*.{c++,cc,cpp,cxx,h,h++,hh,hpp,hxx,inl,ipp,tlh,tli}]
+vc_generate_documentation_comments = doxygen_slash_star
+charset = utf-8-bom
+indent_style = tab
+indent_size = 4
+trim_trailing_whitespace = true

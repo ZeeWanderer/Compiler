@@ -14,6 +14,7 @@ namespace slljit
 		names.insert(name);
 		global_offsets.emplace_back(offset);
 	}
+
 	void Layout::addConsatant(string name, double value, LayoutVarTypes type)
 	{
 		constant_globals.emplace(pair{name, ConstantGlobalDefinition{value, type}});

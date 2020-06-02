@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <list>
 #include <string>
 #include <vector>
@@ -34,7 +34,7 @@ namespace slljit
 		set<string> names;
 		vector<GlobalDefinition> globals;
 		vector<size_t> global_offsets;
-		map<string, struct ConstantGlobalDefinition> constant_globals;
+		map<string, ConstantGlobalDefinition> constant_globals;
 
 		void addMember(string name, LayoutVarTypes type, size_t offset);
 

@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Parser.h"
 #include "AST.h"
 
@@ -518,6 +518,4 @@ namespace slljit
 			}
 		}
 	}
-
-	/// top ::= definition | external | expression | ';'
 }; // namespace slljit

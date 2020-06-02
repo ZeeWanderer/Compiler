@@ -11,8 +11,10 @@ namespace slljit
 	// Lexer
 	//===----------------------------------------------------------------------===//
 
-	// The lexer returns tokens [0-255] if it is an unknown character, otherwise one
-	// of these for known things.
+	/**
+	 * @enum slljit::Token
+	 * @brief Token representation. All values < 0.
+	*/
 	enum Token : int
 	{
 		tok_eof = -1,
@@ -52,10 +54,15 @@ namespace slljit
 		static inline bool is_id_char(int c);
 
 		int LastChar = ' ';
-		/// gettok - Return the next token from standard input.
+		
 	public:
 		void set_source(std::string_view source);
 
+		/**
+		 * @brief get next token from source code.
+		 * @return an integer representation of a token. Either a Token or a character.
+		 * @ref slljit::Token
+		*/
 		int gettok();
 
 		std::string get_identifier();

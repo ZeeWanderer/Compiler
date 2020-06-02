@@ -1,4 +1,4 @@
-// Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
+﻿// Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 // TODO: nothrow error handling
 // TODO: parse funnction arg types

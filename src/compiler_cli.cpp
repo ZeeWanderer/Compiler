@@ -84,7 +84,7 @@ int main()
 	Layout m_layout;
 	m_layout.addMember("x", ::Kdouble, offsetof(Data, x));
 	m_layout.addMember("y", ::Kdouble, offsetof(Data, y));
-	m_layout.addConsatantMember("v", 5, ::Kdouble);
+	m_layout.addConsatant("v", 5, ::Kdouble);
 
 	std::string source_code = R"(
 	extern putchard(double x);

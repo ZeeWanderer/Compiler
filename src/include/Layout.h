@@ -38,6 +38,6 @@ namespace slljit
 
 		void addMember(string name, LayoutVarTypes type, size_t offset);
 
-		void addConsatantMember(string name, double value, LayoutVarTypes type);
+		void addConsatant(string name, double value, LayoutVarTypes type);
 	};
 }; // namespace slljit

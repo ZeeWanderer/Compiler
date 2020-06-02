@@ -102,6 +102,9 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CompileAs>CompileAsCpp</CompileAs>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -40,6 +40,16 @@
 	set CFLAGS="$(CompilerArgs)"
 	cmake -G "Ninja Multi-Config" -DCMAKE_CONFIGURATION_TYPES:STRING="Debug;Release" -DCMAKE_C_COMPILER:FILEPATH="clang-cl.exe" -DCMAKE_CXX_COMPILER:FILEPATH="clang-cl.exe" -DLLVM_TARGETS_TO_BUILD:STRING="X86" -DLLVM_ENABLE_BINDINGS:BOOL=OFF -DLLVM_INCLUDE_RUNTIMES:BOOL=OFF -DLLVM_ENABLE_IDE:BOOL=OFF -DLLVM_INCLUDE_DOCS:BOOL=OFF -DLLVM_INCLUDE_EXAMPLES:BOOL=OFF -DLLVM_INCLUDE_TESTS:BOOL=OFF -DLLVM_INCLUDE_TOOLS:BOOL=OFF -DLLVM_INCLUDE_UTILS:BOOL=OFF  -DLLVM_INCLUDE_BENCHMARKS:BOOL=OFF -DLLVM_ENABLE_DUMP:BOOL=ON -DLLVM_OPTIMIZED_TABLEGEN:BOOL=ON -DCMAKE_CXX_STANDARD:STRING="17" ../llvm-project/llvm</CmakeCLI>
     <CmakeBuild>cmake --build . --config "$(Configuration)"</CmakeBuild>
+    <CleanCmakeCacheCMD>for /F "delims= eol=|" %%f in ('
+  dir /b ^| findstr /V "llvm_build[^.]*\.vcxproj"
+') do (
+  echo deleting .\%%f
+  if exist %%f\nul (
+    rmdir .\%%f /s /q
+  ) else (
+    del .\%%f /q
+  )
+)</CleanCmakeCacheCMD>
   </PropertyGroup>
   <PropertyGroup>
     <NMakePreprocessorDefinitions>
@@ -47,9 +57,8 @@
     <NMakeBuildCommandLine>$(CmakeCLI)
 	$(CmakeBuild)</NMakeBuildCommandLine>
     <NMakeReBuildCommandLine>$(CmakeCLI)
-	$(CmakeBuild)</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>$(CmakeCLI)
-	$(CmakeBuild) --target clean</NMakeCleanCommandLine>
+	$(CmakeBuild) --target clean &amp;&amp; $(CmakeBuild)</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>$(CleanCmakeCacheCMD)</NMakeCleanCommandLine>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>

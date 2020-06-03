@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "AST.h"
 
 #include "Context.h"
@@ -225,7 +225,7 @@ namespace slljit
 		//	BasicBlock* cont_calcBB = BasicBlock::Create(m_context.LLVM_Context, "cond_calc", TheFunction);
 		BasicBlock* IfBB    = BasicBlock::Create(m_context.LLVM_Context, "if", TheFunction);
 		BasicBlock* ElseBB  = BasicBlock::Create(m_context.LLVM_Context, "else", TheFunction);
-		BasicBlock* MergeBB = BasicBlock::Create(m_context.LLVM_Context, "ifcont", TheFunction);
+		BasicBlock* MergeBB = BasicBlock::Create(m_context.LLVM_Context, "after", TheFunction);
 
 		//	m_context.LLVM_Builder.CreateBr(cont_calcBB);
 
@@ -326,7 +326,7 @@ namespace slljit
 
 		// Make the new basic block for the loop header, inserting after current
 		// block.
-		BasicBlock* LoopBB = BasicBlock::Create(m_context.LLVM_Context, "loop", TheFunction);
+		BasicBlock* LoopBB = BasicBlock::Create(m_context.LLVM_Context, "loop_header", TheFunction);
 		// Create the "after loop" block and insert it.
 		BasicBlock* LoopBobyBB = BasicBlock::Create(m_context.LLVM_Context, "loop_body", TheFunction);
 		// Create the "after loop" block and insert it.
@@ -486,18 +486,7 @@ namespace slljit
 			}
 		}
 
-		//	if (Value* RetVal = Body->codegen(m_context, m_local_context))
-		//{
-		//	// Finish off the function.
-		//	LLVM_Builder.CreateRet(RetVal);
-
-		// Validate the generated code, checking for consistency.
 		verifyFunction(*TheFunction);
-
-		m_local_context.LLVM_FPM->doInitialization();
-		// Run the optimizer on the function.
-		m_local_context.LLVM_FPM->run(*TheFunction);
-		m_local_context.LLVM_FPM->doFinalization();
 
 		return TheFunction;
 		//}

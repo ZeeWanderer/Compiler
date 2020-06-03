@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "CodeGen.h"
 #include "Layout.h"
 
@@ -73,9 +73,6 @@ namespace slljit
 		{
 			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 			{
-				//	fprintf(stderr, "Read prototype: ");
-				//	FnIR->print(errs());
-				//	fprintf(stderr, "\n");
 				m_local_context.FunctionProtos[(*it)->getName()] = std::move((*it));
 			}
 		}
@@ -84,13 +81,20 @@ namespace slljit
 		{
 			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 			{
-				//	fprintf(stderr, "Read function definition:");
-				//	FnIR->print(errs());
 				fprintf(stderr, "\n");
 			}
 		}
-		//	fprintf(stderr, "Module:\n");
+
+		bool Cnaged_init = m_local_context.LLVM_FPM->doInitialization();
+		//	m_local_context.LLVM_Module->dump();
+		for (auto& it : m_local_context.LLVM_Module->functions())
+		{
+			m_local_context.LLVM_FPM->run(it);
+		}
+
 		m_local_context.LLVM_PM->run(*m_local_context.LLVM_Module.get());
+
+		bool Cnaged_fin = m_local_context.LLVM_FPM->doFinalization();
 		m_local_context.LLVM_Module->dump();
 
 		auto key = m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));

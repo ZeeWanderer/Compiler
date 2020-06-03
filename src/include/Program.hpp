@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <list>
 #include <string>
 #include <vector>
@@ -21,7 +21,6 @@ namespace slljit
 	{
 	protected:
 		Context& m_context;
-		CodeGen* m_codegen_ptr = nullptr;
 		LocalContext m_local_context;
 		Layout m_layout;
 		//	vector<pair<intptr_t, GlobalDefinition>> runtime_globals;
@@ -39,7 +38,6 @@ namespace slljit
 			m_layout = layout;
 			Parser m_parser(m_local_context.BinopPrecedence);
 			CodeGen m_codegen;
-			m_codegen_ptr = &m_codegen;
 			m_parser.set_source(body);
 
 			m_parser.parse();

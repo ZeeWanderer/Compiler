@@ -21,10 +21,10 @@ set(COMPILERCLI_SRC
 
 add_executable (CompilerCLI ${COMPILERCLI_SRC})
 
-target_include_directories(CompilerCLI PUBLIC "${PROJECT_SOURCE_DIR}/llvm-project/llvm/include")
+target_include_directories(CompilerCLI PUBLIC ${LLVM_INCLUDE_DIRS})
 target_include_directories(CompilerCLI PUBLIC "./include")
 
-set(LLVM_TAGETS
+set(LLVM_TARGETS
   LLVMAnalysis
   LLVMCore
   LLVMExecutionEngine
@@ -71,6 +71,6 @@ set(LLVM_TAGETS
   LLVMDemangle
 )
 
-target_link_libraries(CompilerCLI ${LLVM_TAGETS})
+target_link_libraries(CompilerCLI ${LLVM_TARGETS})
 
-add_dependencies(CompilerCLI ${LLVM_TAGETS})
+add_dependencies(CompilerCLI ${LLVM_TARGETS})

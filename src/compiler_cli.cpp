@@ -77,8 +77,6 @@ struct Data
 	double y;
 };
 
-
-
 int main()
 {
 	Context m_context;

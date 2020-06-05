@@ -73,8 +73,9 @@ std::string hexStr(unsigned char* data, int len)
 
 struct Data
 {
-	double x;
-	double y;
+	double iter;
+	double start_0;
+	double start_1;
 };
 
 int main()
@@ -82,51 +83,34 @@ int main()
 	Context m_context;
 	Program<Data> m_program(m_context);
 	Layout m_layout;
-	m_layout.addMember("x", ::Kdouble, offsetof(Data, x));
-	m_layout.addMember("y", ::Kdouble, offsetof(Data, y));
+	m_layout.addMember("iter", ::Kdouble, offsetof(Data, iter));
+	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
+	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
 	m_layout.addConsatant("v", 5, ::Kdouble);
 
 	std::string source_code = R"(
-	extern putchard(double x);
-	extern printd(double x);
-	double max(double left, double right)
-	{
-		if(left > right)
-		{
-			return left;
-		}
-		return right;
-	}
 	double main()
 	{
-		double a = x+v*2;
-		double b = x*v*2 + a;
-		double d = x+v+2 + b;
-		double e = x - v + 2 + d;
-		for(double idx0 = 0; idx0<400; idx0 = idx0+1)
+		double left = start_0;
+		double right = start_1;
+		for(double idx = 0;idx<iter;idx = idx+1 )
 		{
-			e = e + 2;
+			double tmp = right;
+			right = right+left;
+			left = tmp;
 		}
-		for(; idx0<801; idx0 = idx0+2)
-		{
-			e = e + 2;
-		}
-		x = 4;
-		double h_ = x;
-		printd(h_);
-		printd(h_);
-		printd(h_);
-		double t = max(a, e);
-		x = 5/2;
-		y = 5;
-		return max(t, 3);
+		return right;
 	}
 )";
 	m_program.compile(source_code, m_layout);
 
-	Data data{3.0, 1.0};
+	Data data{4.0,0.0, 1.0};
 
 	auto retval = m_program.run(&data);
+
+	unsigned char* ptr = reinterpret_cast<unsigned char*>(&m_program.main_func);
+	auto tmp_str = hexStr(ptr, 150);
+	printf("%s",tmp_str.c_str());
 
 	return 0;
 }

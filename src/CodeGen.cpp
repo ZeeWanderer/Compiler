@@ -81,6 +81,7 @@ namespace slljit
 		{
 			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 			{
+				// FnIR->print(errs());
 				fprintf(stderr, "\n");
 			}
 		}

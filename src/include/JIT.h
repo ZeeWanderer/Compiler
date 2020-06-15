@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef LLVM_EXECUTIONENGINE_ORC_SHADERJIT_H
 #define LLVM_EXECUTIONENGINE_ORC_SHADERJIT_H
@@ -18,23 +18,46 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/ExecutionEngine/ObjectCache.h"
+#include "llvm/Object/ObjectFile.h"
 #include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
+#include <fstream>
 
 namespace slljit
 {
 	using namespace llvm;
 	using namespace orc;
+	using namespace object;
+	using namespace std;
+
+	class DummyCache : public ObjectCache
+	{
+	public:
+		virtual void notifyObjectCompiled(const Module* M, MemoryBufferRef Obj) override
+		{
+			ofstream ibject_f("./tmp.obj", ios::out | ios::trunc | ios::binary);
+			auto test = ibject_f.is_open();
+			ibject_f.write(Obj.getBufferStart(), Obj.getBufferSize());
+		}
+
+		virtual std::unique_ptr<MemoryBuffer> getObject(const Module* M) override
+		{
+			return nullptr;
+		}
+	};
 
 	class ShaderJIT
 	{
 	public:
 		using ObjLayerT     = LegacyRTDyldObjectLinkingLayer;
 		using CompileLayerT = LegacyIRCompileLayer<ObjLayerT, SimpleCompiler>;
-
+#ifdef _DEBUG
+		DummyCache m_dummy_cache;
+#endif // DEBUG
 		ShaderJIT()
 		    : Resolver(createLegacyLookupResolver(
 		          ES, [this](StringRef Name) { return findMangledSymbol(std::string(Name)); }, [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); }))
@@ -47,6 +70,9 @@ namespace slljit
 		    , CompileLayer(AcknowledgeORCv1Deprecation, ObjectLayer, SimpleCompiler(*TM))
 		{
 			sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
+#ifdef _DEBUG
+			CompileLayer.getCompiler().setObjectCache(&m_dummy_cache);
+#endif // DEBUG
 		}
 
 		TargetMachine& getTargetMachine()

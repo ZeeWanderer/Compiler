@@ -2,6 +2,8 @@
 #include "CodeGen.h"
 #include "Layout.h"
 
+#include "llvm/Support/raw_ostream.h"
+
 using namespace slljit;
 using namespace llvm;
 using namespace llvm::orc;
@@ -82,11 +84,16 @@ namespace slljit
 			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
 			{
 				// FnIR->print(errs());
-				fprintf(stderr, "\n");
+				//	fprintf(stderr, "\n");
 			}
 		}
+#if _DEBUG
+		fprintf(stderr, "; PreOptimization:\n");
+		m_local_context.LLVM_Module->dump();
+#endif
 
 		bool Cnaged_init = m_local_context.LLVM_FPM->doInitialization();
+		assert(Cnaged_init == false);
 		//	m_local_context.LLVM_Module->dump();
 		for (auto& it : m_local_context.LLVM_Module->functions())
 		{
@@ -96,7 +103,31 @@ namespace slljit
 		m_local_context.LLVM_PM->run(*m_local_context.LLVM_Module.get());
 
 		bool Cnaged_fin = m_local_context.LLVM_FPM->doFinalization();
+		assert(Cnaged_fin == false);
+
+#if _DEBUG
+		fprintf(stderr, "; PostOptimization:\n");
 		m_local_context.LLVM_Module->dump();
+
+		// ASSEMBLY
+		std::string outStr;
+		{
+			auto& TM = m_context.shllJIT->getTargetMachine();
+			llvm::legacy::PassManager pm;
+
+			llvm::raw_string_ostream stream(outStr);
+
+			llvm::buffer_ostream pstream(stream);
+
+			TM.addPassesToEmitFile(pm, pstream, nullptr,
+
+			    llvm::CodeGenFileType::CGFT_AssemblyFile);
+
+			pm.run(*m_local_context.LLVM_Module.get());
+		}
+
+		fprintf(stderr, "; Assembly:\n%s", outStr.c_str());
+#endif
 
 		auto key = m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));
 		m_local_context.set_key(key);

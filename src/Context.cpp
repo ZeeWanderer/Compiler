@@ -10,12 +10,19 @@ namespace slljit
 {
 	void init__()
 	{
-		static bool b_once = true;
+		static bool b_once                             = true;
+		static constexpr const char* llvm_cl_options[] = {"./slljit", "-extra-vectorizer-passes", "-openmp-opt-disable", "-enable-unroll-and-jam"};
+		static constexpr auto llvm_cl_options_c        = sizeof(llvm_cl_options) / sizeof(*llvm_cl_options);
+
 		if (b_once)
 		{
+			const auto test = cl::ParseCommandLineOptions(llvm_cl_options_c, llvm_cl_options);
+			assert(test);
+
 			InitializeNativeTarget();
 			InitializeNativeTargetAsmPrinter();
 			InitializeNativeTargetAsmParser();
+
 			b_once = false;
 		}
 	}
@@ -23,7 +30,9 @@ namespace slljit
 	    : LLVM_Builder(LLVM_Context)
 	{
 		init__();
-		shllJIT = std::make_unique<ShaderJIT>();
+		shllJIT  = std::make_unique<ShaderJIT>();
+		auto& TM = shllJIT->getTargetMachine();
+		TM.setOptLevel(CodeGenOpt::Level::Aggressive);
 	}
 	LocalContext::LocalContext(Context& m_context)
 	{
@@ -37,25 +46,33 @@ namespace slljit
 		LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
 		LLVM_PM  = std::make_unique<legacy::PassManager>();
 
-		LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
-		LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
-		LLVM_FPM->add(createSROAPass());
-		LLVM_FPM->add(createLoopSimplifyCFGPass());
-		LLVM_FPM->add(createLoadStoreVectorizerPass());
-		LLVM_FPM->add(createLoopVectorizePass());
-		LLVM_FPM->add(createLoopUnrollPass());
-		LLVM_FPM->add(createGVNPass());         //	Eliminate Common SubExpressions.
-		LLVM_FPM->add(createNewGVNPass());      //	Global value numbering
-		LLVM_FPM->add(createReassociatePass()); //	Reassociate expressions.
-		LLVM_FPM->add(createConstantPropagationPass());
-		LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	standard calls
-		LLVM_FPM->add(createDeadCodeEliminationPass());
-		LLVM_FPM->add(createAggressiveDCEPass());
-		LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
-		LLVM_FPM->add(createInstructionCombiningPass()); //	Do simple "peephole" optimizations and bit-twiddling optzns.
-		////	LLVM_FPM->add(createAggressiveInstCombinerPass());
-		LLVM_FPM->add(createSLPVectorizerPass());
-		LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
+		auto builder         = PassManagerBuilder();
+		builder.OptLevel     = CodeGenOpt::Level::Aggressive;
+		builder.SLPVectorize = true;
+		builder.NewGVN       = true;
+
+		builder.populateFunctionPassManager(*LLVM_FPM);
+		builder.populateModulePassManager(*LLVM_PM);
+
+		//	LLVM_FPM->add(createCFGSimplificationPass());       //	Dead code elimination
+		//	LLVM_FPM->add(createPromoteMemoryToRegisterPass()); //	SSA conversion
+		//	LLVM_FPM->add(createSROAPass());
+		//	LLVM_FPM->add(createLoopSimplifyCFGPass());
+		//	LLVM_FPM->add(createLoadStoreVectorizerPass());
+		//	LLVM_FPM->add(createLoopVectorizePass());
+		//	LLVM_FPM->add(createLoopUnrollPass());
+		//	LLVM_FPM->add(createGVNPass());         //	Eliminate Common SubExpressions.
+		//	LLVM_FPM->add(createNewGVNPass());      //	Global value numbering
+		//	LLVM_FPM->add(createReassociatePass()); //	Reassociate expressions.
+		//	LLVM_FPM->add(createConstantPropagationPass());
+		//	LLVM_FPM->add(createPartiallyInlineLibCallsPass()); //	standard calls
+		//	LLVM_FPM->add(createDeadCodeEliminationPass());
+		//	LLVM_FPM->add(createAggressiveDCEPass());
+		//	LLVM_FPM->add(createCFGSimplificationPass());    //	Cleanup
+		//	LLVM_FPM->add(createInstructionCombiningPass()); //	Do simple "peephole" optimizations and bit-twiddling optzns.
+		//////	LLVM_FPM->add(createAggressiveInstCombinerPass());
+		//	LLVM_FPM->add(createSLPVectorizerPass());
+		//	LLVM_FPM->add(createFlattenCFGPass()); //	Flatten the control flow graph.
 
 		//	LLVM_FPM->add(createCFGSimplificationPass());
 		//	LLVM_FPM->add(createPromoteMemoryToRegisterPass());
@@ -78,8 +95,8 @@ namespace slljit
 
 		//	Remove unused functions, structs, global variables, etc
 		//	LLVM_PM->add(createStripDeadPrototypesPass());
-		LLVM_PM->add(createFunctionInliningPass());
-		LLVM_PM->add(createDeadInstEliminationPass());
+		//	LLVM_PM->add(createFunctionInliningPass());
+		//	LLVM_PM->add(createDeadInstEliminationPass());
 	}
 	void LocalContext::set_key(VModuleKey module_key)
 	{

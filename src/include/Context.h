@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 // TODO: remove pch,h
 #include "pch.h"
 #include "JIT.h"

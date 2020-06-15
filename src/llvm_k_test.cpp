@@ -6,6 +6,7 @@
 
 using namespace llvm;
 using namespace llvm::orc;
+using namespace slljit;
 
 //===----------------------------------------------------------------------===//
 // Lexer

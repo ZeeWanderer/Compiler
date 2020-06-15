@@ -78,8 +78,15 @@ struct Data
 	double start_1;
 };
 
-int main()
+int main(int argc, char** argv)
 {
+	//for (auto idx = 0; idx<argc;idx++)
+	//{
+	//	printf("%s ", argv[idx]);
+	//}
+
+	//const auto test = cl::ParseCommandLineOptions(argc, argv);
+
 	Context m_context;
 	Program<Data> m_program(m_context);
 	Layout m_layout;
@@ -108,9 +115,9 @@ int main()
 
 	auto retval = m_program.run(&data);
 
-	unsigned char* ptr = reinterpret_cast<unsigned char*>(&m_program.main_func);
-	auto tmp_str = hexStr(ptr, 150);
-	printf("%s",tmp_str.c_str());
+	//unsigned char* ptr = reinterpret_cast<unsigned char*>(&m_program.main_func);
+	//auto tmp_str = hexStr(ptr, 150);
+	//printf("%s",tmp_str.c_str());
 
 	return 0;
 }

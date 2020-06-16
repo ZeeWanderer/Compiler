@@ -11,8 +11,9 @@ namespace slljit
 	void init__()
 	{
 		static bool b_once                             = true;
-		static constexpr const char* llvm_cl_options[] = {"./slljit", "-extra-vectorizer-passes", "-openmp-opt-disable", "-enable-unroll-and-jam"};
-		static constexpr auto llvm_cl_options_c        = sizeof(llvm_cl_options) / sizeof(*llvm_cl_options);
+		static constexpr const char* llvm_cl_options[] = {
+		    "./slljit", "-extra-vectorizer-passes", "-openmp-opt-disable", "-enable-unroll-and-jam", "-enable-simple-loop-unswitch"};
+		static constexpr auto llvm_cl_options_c = sizeof(llvm_cl_options) / sizeof(*llvm_cl_options);
 
 		if (b_once)
 		{
@@ -39,7 +40,7 @@ namespace slljit
 		BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};
 
 		// Open a new module.
-		LLVM_Module = std::make_unique<Module>("my cool jit", m_context.LLVM_Context);
+		LLVM_Module = std::make_unique<Module>("shader_module", m_context.LLVM_Context);
 		LLVM_Module->setDataLayout(m_context.shllJIT->getTargetMachine().createDataLayout());
 
 		// Create a new pass manager attached to it.

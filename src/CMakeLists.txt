@@ -94,3 +94,5 @@ target_include_directories(codegen_tests PUBLIC ${LLVM_INCLUDE_DIRS})
 target_include_directories(codegen_tests PUBLIC "./include")
 target_link_libraries(codegen_tests ${LLVM_TARGETS})
 add_dependencies(codegen_tests ${LLVM_TARGETS})
+
+install(TARGETS CompilerCLI llvm_k_test codegen_tests)

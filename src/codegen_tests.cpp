@@ -1,4 +1,4 @@
-// Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
+﻿// Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include "pch.h"
@@ -62,7 +62,7 @@ static void InitializeModuleAndPassManager()
 	LLVM_FPM->add(createLoopSimplifyCFGPass());
 	LLVM_FPM->add(createLoopVectorizePass());
 	LLVM_FPM->add(createLoopUnrollPass());
-	LLVM_FPM->add(createConstantPropagationPass());
+	LLVM_FPM->add(createConstantHoistingPass());
 	LLVM_FPM->add(createGVNPass());                     // Eliminate Common SubExpressions.
 	LLVM_FPM->add(createNewGVNPass());                  //	Global value numbering
 	LLVM_FPM->add(createReassociatePass());             // Reassociate expressions.
@@ -320,7 +320,7 @@ void GenerateFunc_6()
 	for (auto& var : g_list)
 	{
 		auto name = var.getName();
-		name.size();
+		auto const nsz_ = name.size();
 	}
 	/*ConstantPointerNull::get(Type::getDoublePtrTy(LLVM_Context));
 	FunctionType* FT = FunctionType::get(Type::getDoubleTy(LLVM_Context), nullptr, false);

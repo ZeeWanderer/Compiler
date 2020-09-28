@@ -61,7 +61,15 @@ namespace slljit
 		ShaderJIT()
 		    : Resolver(createLegacyLookupResolver(
 		          ES, [this](StringRef Name) { return findMangledSymbol(std::string(Name)); }, [](Error Err) { cantFail(std::move(Err), "lookupFlags failed"); }))
-		    , TM(EngineBuilder().selectTarget())
+		    , TM(EngineBuilder()
+		              .setMCPU(sys::getHostCPUName())
+		              .setOptLevel(CodeGenOpt::Aggressive)
+		              //.setMAttrs([]() {
+			             // auto features = llvm::StringMap<bool>();
+			             // sys::getHostCPUFeatures(features);
+			             // return features;
+		              //}())
+		              .selectTarget())
 		    , DL(TM->createDataLayout())
 		    , ObjectLayer(AcknowledgeORCv1Deprecation, ES,
 		          [this](VModuleKey) {

@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 )";
 	m_program.compile(source_code, m_layout);
 
-	Data data{4.0,0.0, 1.0};
+	Data data{4.0, 0.0, 1.0};
 
 	auto retval = m_program.run(&data);
 

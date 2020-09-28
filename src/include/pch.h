@@ -11,6 +11,8 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/APFloat.h"
 
+#include "llvm/CodeGen/CommandFlags.h"
+
 #include "llvm/Object/ObjectFile.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -31,6 +33,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/Host.h"
 
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"

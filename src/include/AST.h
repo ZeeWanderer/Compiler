@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <list>
 #include <string>
 #include <vector>
@@ -102,8 +102,7 @@ namespace slljit
 
 	public:
 		UnaryExprAST(char Opcode, std::unique_ptr<ExprAST> Operand)
-		    : Opcode(Opcode)
-		    , Operand(std::move(Operand))
+		    : Opcode(Opcode), Operand(std::move(Operand))
 		{
 		}
 
@@ -136,9 +135,7 @@ namespace slljit
 
 	public:
 		BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
-		    : Op(Op)
-		    , LHS(std::move(LHS))
-		    , RHS(std::move(RHS))
+		    : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS))
 		{
 		}
 
@@ -153,8 +150,7 @@ namespace slljit
 
 	public:
 		CallExprAST(const std::string& Callee, std::vector<std::unique_ptr<ExprAST>> Args)
-		    : Callee(Callee)
-		    , Args(std::move(Args))
+		    : Callee(Callee), Args(std::move(Args))
 		{
 		}
 
@@ -170,9 +166,7 @@ namespace slljit
 
 	public:
 		IfExprAST(std::unique_ptr<ExprAST> Cond, ExprList Then, ExprList Else)
-		    : Cond(std::move(Cond))
-		    , Then(std::move(Then))
-		    , Else(std::move(Else))
+		    : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else))
 		{
 		}
 
@@ -194,10 +188,7 @@ namespace slljit
 
 	public:
 		ForExprAST(std::unique_ptr<ExprAST> VarInit, std::unique_ptr<ExprAST> Cond, ExprList Body, std::unique_ptr<ExprAST> EndExpr)
-		    : VarInit(std::move(VarInit))
-		    , Cond(std::move(Cond))
-		    , Body(std::move(Body))
-		    , EndExpr(std::move(EndExpr))
+		    : VarInit(std::move(VarInit)), Cond(std::move(Cond)), Body(std::move(Body)), EndExpr(std::move(EndExpr))
 		{
 		}
 
@@ -254,10 +245,7 @@ namespace slljit
 
 	public:
 		PrototypeAST(const std::string& Name, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
-		    : Name(Name)
-		    , Args(std::move(Args))
-		    , IsOperator(IsOperator)
-		    , Precedence(Prec)
+		    : Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec)
 		{
 		}
 
@@ -298,14 +286,15 @@ namespace slljit
 
 	public:
 		FunctionAST(PrototypeAST& Proto, ExprList Body)
-		    : Proto(Proto)
-		    , Body(std::move(Body))
+		    : Proto(Proto), Body(std::move(Body))
 		{
 		}
 
 		// Cast to Function*
 		// Cast to Function*
 		Value* codegen(Context& m_context, LocalContext& m_local_context);
+
+		const std::string& getName() const;
 	};
 
 	/// LogError* - These are little helper functions for error handling.
@@ -320,7 +309,6 @@ namespace slljit
 	Value* LogErrorV(const char* Str);
 
 	Function* getFunction(std::string Name, Context& m_context, LocalContext& m_local_context);
-
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
 	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, Context& m_context, LocalContext& m_local_context);

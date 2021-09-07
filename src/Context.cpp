@@ -2,7 +2,7 @@
 #include "Context.h"
 
 using namespace llvm;
-using namespace llvm::orc;
+using namespace orc;
 using namespace slljit;
 using namespace std;
 
@@ -11,9 +11,8 @@ namespace slljit
 	void init__()
 	{
 		static bool b_once                             = true;
-		static constexpr const char* llvm_cl_options[] = {
-		    "./slljit", "-extra-vectorizer-passes", "-openmp-opt-disable", "-enable-unroll-and-jam", "-enable-simple-loop-unswitch"};
-		static constexpr auto llvm_cl_options_c = sizeof(llvm_cl_options) / sizeof(*llvm_cl_options);
+		static constexpr const char* llvm_cl_options[] = {"./slljit", "-extra-vectorizer-passes", "-openmp-opt-disable", "-enable-unroll-and-jam", "-enable-simple-loop-unswitch"};
+		static constexpr auto llvm_cl_options_c        = sizeof(llvm_cl_options) / sizeof(*llvm_cl_options);
 
 		if (b_once)
 		{
@@ -28,20 +27,22 @@ namespace slljit
 		}
 	}
 	Context::Context()
-	    : LLVM_Builder(LLVM_Context)
 	{
 		init__();
-		shllJIT  = std::make_unique<ShaderJIT>();
-		auto& TM = shllJIT->getTargetMachine();
-		TM.setOptLevel(CodeGenOpt::Level::Aggressive);
+		shllJIT = ExitOnError()(ShaderJIT::Create());
+		//	auto& TM = shllJIT->getTargetMachine();
+		//	TM.setOptLevel(CodeGenOpt::Level::Aggressive);
 	}
 	LocalContext::LocalContext(Context& m_context)
 	{
 		BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};
 
+		LLVM_Context = make_unique<LLVMContext>();
+		LLVM_Builder = make_unique<IRBuilder<>>(*LLVM_Context);
+
 		// Open a new module.
-		LLVM_Module = std::make_unique<Module>("shader_module", m_context.LLVM_Context);
-		LLVM_Module->setDataLayout(m_context.shllJIT->getTargetMachine().createDataLayout());
+		LLVM_Module = std::make_unique<Module>("shader_module", *LLVM_Context);
+		LLVM_Module->setDataLayout(m_context.shllJIT->getDataLayout());
 
 		// Create a new pass manager attached to it.
 		LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
@@ -99,12 +100,12 @@ namespace slljit
 		//	LLVM_PM->add(createFunctionInliningPass());
 		//	LLVM_PM->add(createDeadInstEliminationPass());
 	}
-	void LocalContext::set_key(VModuleKey module_key)
-	{
-		this->module_key = module_key;
-	}
-	auto LocalContext::get_key()
-	{
-		return this->module_key;
-	}
+	//	void LocalContext::set_key(VModuleKey module_key)
+	//{
+	//	this->module_key = module_key;
+	//}
+	//	auto LocalContext::get_key()
+	//{
+	//	return this->module_key;
+	//}
 }; // namespace slljit

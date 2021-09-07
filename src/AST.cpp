@@ -34,9 +34,9 @@ namespace slljit
 				if (gVar->isConstant())
 					return LogErrorV("Trying to store in constant global");
 
-				auto ptr = m_context.LLVM_Builder.CreateLoad(gVar, LHSE->getName());
-				//	Value* gep = m_context.LLVM_Builder.CreateGEP(Type::getDoubleTy(m_context.LLVM_Context), ptr, m_context.LLVM_Builder.getInt32(0), "ptr_");
-				m_context.LLVM_Builder.CreateStore(Val, ptr);
+				auto ptr = m_local_context.LLVM_Builder->CreateLoad(gVar, LHSE->getName());
+				//	Value* gep = m_local_context.LLVM_Builder->CreateGEP(Type::getDoubleTy(*m_local_context.LLVM_Context), ptr, m_local_context.LLVM_Builder->getInt32(0), "ptr_");
+				m_local_context.LLVM_Builder->CreateStore(Val, ptr);
 				return Val;
 			}
 
@@ -45,7 +45,7 @@ namespace slljit
 			if (!Variable)
 				return LogErrorV("Unknown variable name");
 
-			m_context.LLVM_Builder.CreateStore(Val, Variable);
+			m_local_context.LLVM_Builder->CreateStore(Val, Variable);
 			return Val;
 		}
 
@@ -56,18 +56,18 @@ namespace slljit
 
 		switch (Op)
 		{
-		case '+': return m_context.LLVM_Builder.CreateFAdd(L, R, "addtmp");
-		case '-': return m_context.LLVM_Builder.CreateFSub(L, R, "subtmp");
-		case '*': return m_context.LLVM_Builder.CreateFMul(L, R, "multmp");
-		case '/': return m_context.LLVM_Builder.CreateFDiv(L, R, "divtmp");
+		case '+': return m_local_context.LLVM_Builder->CreateFAdd(L, R, "addtmp");
+		case '-': return m_local_context.LLVM_Builder->CreateFSub(L, R, "subtmp");
+		case '*': return m_local_context.LLVM_Builder->CreateFMul(L, R, "multmp");
+		case '/': return m_local_context.LLVM_Builder->CreateFDiv(L, R, "divtmp");
 		case '<':
-			L = m_context.LLVM_Builder.CreateFCmpULT(L, R, "cmptmp");
+			L = m_local_context.LLVM_Builder->CreateFCmpULT(L, R, "cmptmp");
 			// Convert bool 0/1 to double 0.0 or 1.0
-			return m_context.LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(m_context.LLVM_Context), "booltmp");
+			return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
 		case '>':
-			L = m_context.LLVM_Builder.CreateFCmpUGT(L, R, "cmptmp");
+			L = m_local_context.LLVM_Builder->CreateFCmpUGT(L, R, "cmptmp");
 			// Convert bool 0/1 to double 0.0 or 1.0
-			return m_context.LLVM_Builder.CreateUIToFP(L, Type::getDoubleTy(m_context.LLVM_Context), "booltmp");
+			return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
 		default: break;
 		}
 
@@ -76,8 +76,9 @@ namespace slljit
 		Function* F = getFunction(std::string("binary") + Op, m_context, m_local_context);
 		assert(F && "binary operator not found!");
 
-		Value* Ops[] = {L, R};
-		return m_context.LLVM_Builder.CreateCall(F, Ops, "binop");
+		// TODO: verify this is safe
+		ArrayRef<Value*> Ops = {L, R}; // Should be safe in this case
+		return m_local_context.LLVM_Builder->CreateCall(F, Ops, "binop");
 	}
 
 	/// LogError* - These are little helper functions for error handling.
@@ -132,17 +133,17 @@ namespace slljit
 	AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, Context& m_context, LocalContext& m_local_context)
 	{
 		IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-		return TmpB.CreateAlloca(Type::getDoubleTy(m_context.LLVM_Context), nullptr, VarName);
+		return TmpB.CreateAlloca(Type::getDoubleTy(*m_local_context.LLVM_Context), nullptr, VarName);
 	}
 
 	Value* NoOpAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
-		return ConstantFP::get(m_context.LLVM_Context, APFloat(0.0));
+		return ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0));
 	}
 
 	Value* NumberExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
-		return ConstantFP::get(m_context.LLVM_Context, APFloat(Val));
+		return ConstantFP::get(*m_local_context.LLVM_Context, APFloat(Val));
 	}
 
 	Value* VariableExprAST::codegen(Context& m_context, LocalContext& m_local_context)
@@ -152,12 +153,12 @@ namespace slljit
 		if (gVar)
 		{
 			if (gVar->isConstant())
-				return m_context.LLVM_Builder.CreateLoad(gVar, Name);
+				return m_local_context.LLVM_Builder->CreateLoad(gVar, Name);
 			else
 			{
 				// TODO: load a single time
-				auto ptr = m_context.LLVM_Builder.CreateLoad(gVar, Name);
-				return m_context.LLVM_Builder.CreateLoad(ptr, Name);
+				auto ptr = m_local_context.LLVM_Builder->CreateLoad(gVar, Name);
+				return m_local_context.LLVM_Builder->CreateLoad(ptr, Name);
 			}
 		}
 
@@ -166,7 +167,7 @@ namespace slljit
 			return LogErrorV("Unknown variable name");
 
 		// Load the value.
-		return m_context.LLVM_Builder.CreateLoad(V, Name.c_str());
+		return m_local_context.LLVM_Builder->CreateLoad(V, Name.c_str());
 	}
 
 	Value* UnaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
@@ -179,7 +180,7 @@ namespace slljit
 		if (!F)
 			return LogErrorV("Unknown unary operator");
 
-		return m_context.LLVM_Builder.CreateCall(F, OperandV, "unop");
+		return m_local_context.LLVM_Builder->CreateCall(F, OperandV, "unop");
 	}
 
 	Value* ReturnExprAST::codegen(Context& m_context, LocalContext& m_local_context)
@@ -187,7 +188,7 @@ namespace slljit
 		if (Value* RetVal = Operand->codegen(m_context, m_local_context))
 		{
 			// Finish off the function.
-			m_context.LLVM_Builder.CreateRet(RetVal);
+			m_local_context.LLVM_Builder->CreateRet(RetVal);
 
 			return RetVal;
 		}
@@ -213,35 +214,35 @@ namespace slljit
 				return nullptr;
 		}
 
-		return m_context.LLVM_Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+		return m_local_context.LLVM_Builder->CreateCall(CalleeF, ArgsV, "calltmp");
 	}
 
 	Value* IfExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
-		Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
+		Function* TheFunction = m_local_context.LLVM_Builder->GetInsertBlock()->getParent();
 
 		// Create blocks for the then and else cases.  Insert the 'then' block at the
 		// end of the function.
-		//	BasicBlock* cont_calcBB = BasicBlock::Create(m_context.LLVM_Context, "cond_calc", TheFunction);
-		BasicBlock* IfBB    = BasicBlock::Create(m_context.LLVM_Context, "if", TheFunction);
-		BasicBlock* ElseBB  = BasicBlock::Create(m_context.LLVM_Context, "else", TheFunction);
-		BasicBlock* MergeBB = BasicBlock::Create(m_context.LLVM_Context, "after", TheFunction);
+		//	BasicBlock* cont_calcBB = BasicBlock::Create(*m_local_context.LLVM_Context, "cond_calc", TheFunction);
+		BasicBlock* IfBB    = BasicBlock::Create(*m_local_context.LLVM_Context, "if", TheFunction);
+		BasicBlock* ElseBB  = BasicBlock::Create(*m_local_context.LLVM_Context, "else", TheFunction);
+		BasicBlock* MergeBB = BasicBlock::Create(*m_local_context.LLVM_Context, "after", TheFunction);
 
-		//	m_context.LLVM_Builder.CreateBr(cont_calcBB);
+		//	m_local_context.LLVM_Builder->CreateBr(cont_calcBB);
 
-		//	m_context.LLVM_Builder.SetInsertPoint(cont_calcBB);
+		//	m_local_context.LLVM_Builder->SetInsertPoint(cont_calcBB);
 
 		Value* CondV = Cond->codegen(m_context, m_local_context);
 		if (!CondV)
 			return nullptr;
 
 		// Convert condition to a bool by comparing non-equal to 0.0.
-		CondV = m_context.LLVM_Builder.CreateFCmpONE(CondV, ConstantFP::get(m_context.LLVM_Context, APFloat(0.0)), "ifcond");
+		CondV = m_local_context.LLVM_Builder->CreateFCmpONE(CondV, ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0)), "ifcond");
 
-		m_context.LLVM_Builder.CreateCondBr(CondV, IfBB, ElseBB);
+		m_local_context.LLVM_Builder->CreateCondBr(CondV, IfBB, ElseBB);
 
 		// Emit then value.
-		m_context.LLVM_Builder.SetInsertPoint(IfBB);
+		m_local_context.LLVM_Builder->SetInsertPoint(IfBB);
 
 		{
 			bool isTerminated = false;
@@ -256,14 +257,14 @@ namespace slljit
 			}
 
 			if (!isTerminated)
-				m_context.LLVM_Builder.CreateBr(MergeBB);
+				m_local_context.LLVM_Builder->CreateBr(MergeBB);
 		}
 		// Codegen of 'Then' can change the current block, update IfBB for the PHI.
-		//	IfBB = m_context.LLVM_Builder.GetInsertBlock();
+		//	IfBB = m_local_context.LLVM_Builder->GetInsertBlock();
 
 		// Emit else block.
 		//	TheFunction->getBasicBlockList().push_back(ElseBB);
-		m_context.LLVM_Builder.SetInsertPoint(ElseBB);
+		m_local_context.LLVM_Builder->SetInsertPoint(ElseBB);
 
 		{
 			bool isTerminated = false;
@@ -281,14 +282,14 @@ namespace slljit
 			//	if (!ElseV)
 			//	return nullptr;
 			if (!isTerminated)
-				m_context.LLVM_Builder.CreateBr(MergeBB);
+				m_local_context.LLVM_Builder->CreateBr(MergeBB);
 		}
 		// Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-		//	ElseBB = m_context.LLVM_Builder.GetInsertBlock();
+		//	ElseBB = m_local_context.LLVM_Builder->GetInsertBlock();
 
 		// Emit merge block.
 		//	TheFunction->getBasicBlockList().push_back(MergeBB);
-		m_context.LLVM_Builder.SetInsertPoint(MergeBB);
+		m_local_context.LLVM_Builder->SetInsertPoint(MergeBB);
 		//	PHINode* PN = LLVM_Builder.CreatePHI(Type::getDoubleTy(LLVM_Context), 2, "iftmp");
 
 		//	PN->addIncoming(ThenV, IfBB);
@@ -318,7 +319,7 @@ namespace slljit
 
 	Value* ForExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
-		Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
+		Function* TheFunction = m_local_context.LLVM_Builder->GetInsertBlock()->getParent();
 
 		// generate init variable
 		if (VarInit)
@@ -326,29 +327,29 @@ namespace slljit
 
 		// Make the new basic block for the loop header, inserting after current
 		// block.
-		BasicBlock* LoopBB = BasicBlock::Create(m_context.LLVM_Context, "loop_header", TheFunction);
+		BasicBlock* LoopBB = BasicBlock::Create(*m_local_context.LLVM_Context, "loop_header", TheFunction);
 		// Create the "after loop" block and insert it.
-		BasicBlock* LoopBobyBB = BasicBlock::Create(m_context.LLVM_Context, "loop_body", TheFunction);
+		BasicBlock* LoopBobyBB = BasicBlock::Create(*m_local_context.LLVM_Context, "loop_body", TheFunction);
 		// Create the "after loop" block and insert it.
-		BasicBlock* AfterBB = BasicBlock::Create(m_context.LLVM_Context, "afterloop", TheFunction);
+		BasicBlock* AfterBB = BasicBlock::Create(*m_local_context.LLVM_Context, "afterloop", TheFunction);
 
 		// Insert an explicit fall through from the current block to the LoopBB.
-		m_context.LLVM_Builder.CreateBr(LoopBB);
+		m_local_context.LLVM_Builder->CreateBr(LoopBB);
 
 		// Start insertion in LoopBB.
-		m_context.LLVM_Builder.SetInsertPoint(LoopBB);
+		m_local_context.LLVM_Builder->SetInsertPoint(LoopBB);
 
 		if (!Cond->bIsNoOp())
 		{
 			Value* condVal = Cond->codegen(m_context, m_local_context);
 			// Convert condition to a bool by comparing non-equal to 0.0.
-			condVal = m_context.LLVM_Builder.CreateFCmpONE(condVal, ConstantFP::get(m_context.LLVM_Context, APFloat(0.0)), "loopcond");
+			condVal = m_local_context.LLVM_Builder->CreateFCmpONE(condVal, ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0)), "loopcond");
 
 			// Insert the conditional branch into the end of LoopEndBB.
-			m_context.LLVM_Builder.CreateCondBr(condVal, LoopBobyBB, AfterBB);
+			m_local_context.LLVM_Builder->CreateCondBr(condVal, LoopBobyBB, AfterBB);
 		}
 
-		m_context.LLVM_Builder.SetInsertPoint(LoopBobyBB);
+		m_local_context.LLVM_Builder->SetInsertPoint(LoopBobyBB);
 
 		for (auto& expt : Body)
 		{
@@ -358,21 +359,21 @@ namespace slljit
 		EndExpr->codegen(m_context, m_local_context);
 
 		// Insert unconditional brnch to start
-		m_context.LLVM_Builder.CreateBr(LoopBB);
+		m_local_context.LLVM_Builder->CreateBr(LoopBB);
 
 		// Any new code will be inserted in AfterBB.
-		m_context.LLVM_Builder.SetInsertPoint(AfterBB);
+		m_local_context.LLVM_Builder->SetInsertPoint(AfterBB);
 		//	LLVM_Builder.CreateFCmpONE(ConstantFP::get(LLVM_Context, APFloat(0.0)), ConstantFP::get(LLVM_Context, APFloat(0.0)), "dmm");
 
 		// for expr always returns 0.0.
-		return ConstantFP::get(m_context.LLVM_Context, APFloat(0.0));
+		return ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0));
 	}
 
 	Value* VarExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
 		std::vector<AllocaInst*> OldBindings;
 
-		Function* TheFunction = m_context.LLVM_Builder.GetInsertBlock()->getParent();
+		Function* TheFunction = m_local_context.LLVM_Builder->GetInsertBlock()->getParent();
 
 		// Register all variables and emit their initializer.
 		Value* retval = nullptr;
@@ -395,11 +396,11 @@ namespace slljit
 			}
 			else
 			{ // If not specified, use 0.0.
-				InitVal = ConstantFP::get(m_context.LLVM_Context, APFloat(0.0));
+				InitVal = ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0));
 			}
 
 			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName, m_context, m_local_context);
-			retval             = m_context.LLVM_Builder.CreateStore(InitVal, Alloca);
+			retval             = m_local_context.LLVM_Builder->CreateStore(InitVal, Alloca);
 
 			// Remember the old variable binding so that we can restore the binding when
 			// we unrecurse.
@@ -428,8 +429,8 @@ namespace slljit
 	Value* PrototypeAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
 		// Make the function type:  double(double,double) etc.
-		std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(m_context.LLVM_Context));
-		FunctionType* FT = FunctionType::get(Type::getDoubleTy(m_context.LLVM_Context), Doubles, false);
+		std::vector<Type*> Doubles(Args.size(), Type::getDoubleTy(*m_local_context.LLVM_Context));
+		FunctionType* FT = FunctionType::get(Type::getDoubleTy(*m_local_context.LLVM_Context), Doubles, false);
 
 		Function* F = Function::Create(FT, Function::ExternalLinkage, Name, m_local_context.LLVM_Module.get());
 
@@ -455,8 +456,8 @@ namespace slljit
 			m_local_context.BinopPrecedence[Proto.getOperatorName()] = Proto.getBinaryPrecedence();
 
 		// Create a new basic block to start insertion into.
-		BasicBlock* BB = BasicBlock::Create(m_context.LLVM_Context, "entry", TheFunction);
-		m_context.LLVM_Builder.SetInsertPoint(BB);
+		BasicBlock* BB = BasicBlock::Create(*m_local_context.LLVM_Context, "entry", TheFunction);
+		m_local_context.LLVM_Builder->SetInsertPoint(BB);
 
 		// Record the function arguments in the NamedValues map.
 		m_local_context.NamedValues.clear();
@@ -466,7 +467,7 @@ namespace slljit
 			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), m_context, m_local_context);
 
 			// Store the initial value into the alloca.
-			m_context.LLVM_Builder.CreateStore(&Arg, Alloca);
+			m_local_context.LLVM_Builder->CreateStore(&Arg, Alloca);
 
 			// Add arguments to variable symbol table.
 			m_local_context.NamedValues[std::string(Arg.getName())] = Alloca;
@@ -490,5 +491,10 @@ namespace slljit
 
 		return TheFunction;
 		//}
+	}
+
+	const std::string& FunctionAST::getName() const
+	{
+		return Proto.getName();
 	}
 }; // namespace slljit

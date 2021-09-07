@@ -19,7 +19,7 @@ namespace slljit
 	template <class T>
 	class Program
 	{
-	protected:
+	public:
 		Context& m_context;
 		LocalContext m_local_context;
 		Layout m_layout;
@@ -29,8 +29,7 @@ namespace slljit
 
 	public:
 		Program(Context& m_context)
-		    : m_context(m_context)
-		    , m_local_context(m_context)
+		    : m_context(m_context), m_local_context(m_context)
 		{
 		}
 		void compile(string body, Layout layout)
@@ -47,10 +46,12 @@ namespace slljit
 			m_codegen.compile_layout(m_context, m_local_context, m_layout);
 			m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context);
 
-			auto loader_symbol = m_context.shllJIT->findSymbol("__layout_loader_", m_local_context.module_key);
-			auto symbol        = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
-			main_func          = (double (*)())(intptr_t)cantFail(symbol.getAddress());
-			loader__           = (void (*)(T*))(intptr_t)cantFail(loader_symbol.getAddress());
+			//	auto loader_symbol = m_context.shllJIT->findSymbol("__layout_loader_", m_local_context.module_key);
+			//	auto symbol        = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
+			auto symbol        = ExitOnError()(m_context.shllJIT->lookup("main"));
+			auto loader_symbol = ExitOnError()(m_context.shllJIT->lookup("__layout_loader_"));
+			main_func          = (double (*)())(intptr_t)symbol.getAddress();
+			loader__           = (void (*)(T*))(intptr_t)loader_symbol.getAddress();
 		}
 		double run(T* data)
 		{

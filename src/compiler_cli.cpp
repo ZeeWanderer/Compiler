@@ -66,7 +66,10 @@ std::string hexStr(unsigned char* data, int len)
 	ss << std::hex;
 
 	for (int i(0); i < len; ++i)
-		ss << std::setw(2) << std::setfill('0') << (int)data[i];
+	{
+		auto tmp = (int)data[i];
+		ss << std::setw(2) << std::setfill('0') << (int)data[i] << " ";
+	}
 
 	return ss.str();
 }
@@ -80,44 +83,63 @@ struct Data
 
 int main(int argc, char** argv)
 {
-	//for (auto idx = 0; idx<argc;idx++)
+	//	for (auto idx = 0; idx<argc;idx++)
 	//{
 	//	printf("%s ", argv[idx]);
 	//}
 
-	//const auto test = cl::ParseCommandLineOptions(argc, argv);
+	//	const auto test = cl::ParseCommandLineOptions(argc, argv);
 
 	Context m_context;
 	Program<Data> m_program(m_context);
 	Layout m_layout;
-	m_layout.addMember("iter", ::Kdouble, offsetof(Data, iter));
-	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
-	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
-	m_layout.addConsatant("v", 5, ::Kdouble);
+	m_layout.addMember("N", ::Kdouble, offsetof(Data, iter));
+	//	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
+	//	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
+	//	m_layout.addConsatant("v", 5, ::Kdouble);
 
-	std::string source_code = R"(
+	const std::string source_code = R"(
 	double main()
 	{
-		double left = start_0;
-		double right = start_1;
-		for(double idx = 0;idx<iter;idx = idx+1 )
+		double left = 0;
+		double right = 1;
+		if(N < 2)
 		{
-			double tmp = right;
-			right = right+left;
-			left = tmp;
+			return N;
 		}
+
+		for(double idx = 0; idx < N - 1; idx = idx + 1)
+		{
+			double tmp = right + left;
+			left = right;
+			right = tmp;
+		}
+
 		return right;
 	}
 )";
+	auto begin                    = std::chrono::steady_clock::now();
 	m_program.compile(source_code, m_layout);
+	auto end = std::chrono::steady_clock::now();
 
-	Data data{4.0, 0.0, 1.0};
+	const auto compile_time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
 
+	std::cout << "compile_time = " << compile_time.count() << "[µs]" << std::endl;
+
+	Data data{10.0};
+
+	begin       = std::chrono::steady_clock::now();
 	auto retval = m_program.run(&data);
+	end         = std::chrono::steady_clock::now();
 
-	//unsigned char* ptr = reinterpret_cast<unsigned char*>(&m_program.main_func);
-	//auto tmp_str = hexStr(ptr, 150);
-	//printf("%s",tmp_str.c_str());
+	const auto run_time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+
+	std::cout << "run_time = " << run_time.count() << "[µs]" << std::endl;
+
+	//	unsigned char* ptr = reinterpret_cast<unsigned char*>(m_program.main_func);
+
+	//	auto tmp_str = hexStr(ptr, 150);
+	//	printf("%s",tmp_str.c_str());
 
 	return 0;
 }

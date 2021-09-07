@@ -18,25 +18,25 @@ namespace slljit
 
 		for (auto& global : m_layout.globals)
 		{
-			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, Type::getDoublePtrTy(m_context.LLVM_Context));
+			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, Type::getDoublePtrTy(*m_local_context.LLVM_Context));
 			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.name);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
-			gVar->setInitializer(ConstantPointerNull::get(Type::getDoublePtrTy(m_context.LLVM_Context)));
+			gVar->setInitializer(ConstantPointerNull::get(Type::getDoublePtrTy(*m_local_context.LLVM_Context)));
 
 			//	indices.emplace_back(ConstantInt::get(m_context.LLVM_Context, APInt(32, struct_idx, true)));
 
 			switch (global.type)
 			{
-			case slljit::Kdouble: StructMembers.emplace_back(Type::getDoubleTy(m_context.LLVM_Context));
+			case slljit::Kdouble: StructMembers.emplace_back(Type::getDoubleTy(*m_local_context.LLVM_Context));
 			default: break;
 			}
 		}
 
-		auto loader_struct_type = StructType::create(m_context.LLVM_Context, StructMembers, "layout__", false);
+		auto loader_struct_type = StructType::create(*m_local_context.LLVM_Context, StructMembers, "layout__", false);
 
 		// generate loader function
 		std::vector<Type*> Args(1, loader_struct_type->getPointerTo());
-		FunctionType* FT = FunctionType::get(Type::getVoidTy(m_context.LLVM_Context), Args, false);
+		FunctionType* FT = FunctionType::get(Type::getVoidTy(*m_local_context.LLVM_Context), Args, false);
 
 		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, "__layout_loader_", m_local_context.LLVM_Module.get());
 
@@ -45,27 +45,27 @@ namespace slljit
 		Value* data_pointer = arg;
 		arg->setName("data_ptr");
 
-		BasicBlock* BB = BasicBlock::Create(m_context.LLVM_Context, "entry", TheFunction);
-		m_context.LLVM_Builder.SetInsertPoint(BB);
+		BasicBlock* BB = BasicBlock::Create(*m_local_context.LLVM_Context, "entry", TheFunction);
+		m_local_context.LLVM_Builder->SetInsertPoint(BB);
 
 		auto& g_list = m_local_context.LLVM_Module->getGlobalList();
-		std::vector<Value*> indices{m_context.LLVM_Builder.getInt32(0), m_context.LLVM_Builder.getInt32(0)};
+		std::vector<Value*> indices{m_local_context.LLVM_Builder->getInt32(0), m_local_context.LLVM_Builder->getInt32(0)};
 		uint32_t idx = 0;
 		for (auto& g_var : g_list)
 		{
-			Value* gep = m_context.LLVM_Builder.CreateGEP(data_pointer, indices);
-			m_context.LLVM_Builder.CreateStore(gep, &g_var);
+			Value* gep = m_local_context.LLVM_Builder->CreateGEP(data_pointer, indices);
+			m_local_context.LLVM_Builder->CreateStore(gep, &g_var);
 			idx++;
-			indices[1] = m_context.LLVM_Builder.getInt32(idx);
+			indices[1] = m_local_context.LLVM_Builder->getInt32(idx);
 		}
-		m_context.LLVM_Builder.CreateRet(nullptr);
+		m_local_context.LLVM_Builder->CreateRet(nullptr);
 
 		for (auto& global : m_layout.constant_globals)
 		{
-			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, Type::getDoubleTy(m_context.LLVM_Context));
+			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, Type::getDoubleTy(*m_local_context.LLVM_Context));
 			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.first);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
-			gVar->setInitializer(ConstantFP::get(m_context.LLVM_Context, APFloat(global.second.value)));
+			gVar->setInitializer(ConstantFP::get(*m_local_context.LLVM_Context, APFloat(global.second.value)));
 			gVar->setConstant(true);
 		}
 	}
@@ -100,7 +100,7 @@ namespace slljit
 			m_local_context.LLVM_FPM->run(it);
 		}
 
-		m_local_context.LLVM_PM->run(*m_local_context.LLVM_Module.get());
+		m_local_context.LLVM_PM->run(*m_local_context.LLVM_Module);
 
 		bool Cnaged_fin = m_local_context.LLVM_FPM->doFinalization();
 		assert(Cnaged_fin == false);
@@ -112,24 +112,35 @@ namespace slljit
 		// ASSEMBLY
 		std::string outStr;
 		{
-			auto& TM = m_context.shllJIT->getTargetMachine();
-			llvm::legacy::PassManager pm;
+			/*	auto& TM = m_context.shllJIT->;
+			 llvm::legacy::PassManager pm;
 
-			llvm::raw_string_ostream stream(outStr);
+			 llvm::raw_string_ostream stream(outStr);
 
-			llvm::buffer_ostream pstream(stream);
+			 llvm::buffer_ostream pstream(stream);
 
-			TM.addPassesToEmitFile(pm, pstream, nullptr,
+			 TM.addPassesToEmitFile(pm, pstream, nullptr,
 
-			    llvm::CodeGenFileType::CGFT_AssemblyFile);
+			     llvm::CodeGenFileType::CGFT_AssemblyFile);
 
-			pm.run(*m_local_context.LLVM_Module.get());
+			 pm.run(*m_local_context.LLVM_Module.get());*/
 		}
 
-		fprintf(stderr, "; Assembly:\n%s", outStr.c_str());
+		//	fprintf(stderr, "; Assembly:\n%s", outStr.c_str());
 #endif
+		auto RT = m_context.shllJIT->getMainJITDylib().createResourceTracker();
 
-		auto key = m_context.shllJIT->addModule(std::move(m_local_context.LLVM_Module));
-		m_local_context.set_key(key);
+		auto TSM = ThreadSafeModule(std::move(m_local_context.LLVM_Module), std::move(m_local_context.LLVM_Context));
+
+	llvm:
+		Error err = m_context.shllJIT->addModule(std::move(TSM), RT);
+
+#if _DEBUG
+		if (err)
+			fprintf(stderr, "; error\n");
+
+		fprintf(stderr, "; JDlib:\n");
+		m_context.shllJIT->getMainJITDylib().dump(dbgs());
+#endif
 	}
 }; // namespace slljit

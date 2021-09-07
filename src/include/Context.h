@@ -14,8 +14,6 @@ namespace slljit
 	class Context
 	{
 	public:
-		LLVMContext LLVM_Context;
-		IRBuilder<> LLVM_Builder;
 		std::unique_ptr<ShaderJIT> shllJIT;
 
 	public:
@@ -25,19 +23,22 @@ namespace slljit
 	class LocalContext
 	{
 	public:
+		std::unique_ptr<LLVMContext> LLVM_Context;
+		std::unique_ptr<IRBuilder<>> LLVM_Builder;
+
 		std::unique_ptr<Module> LLVM_Module;
 		std::map<std::string, AllocaInst*> NamedValues;
 		std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
 		std::unique_ptr<legacy::PassManager> LLVM_PM;
 		std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 		std::map<char, int> BinopPrecedence;
-		VModuleKey module_key;
+		//	VModuleKey module_key;
 
 	public:
 		LocalContext(Context& m_context);
 
-		void set_key(VModuleKey module_key);
+		//	void set_key(VModuleKey module_key);
 
-		auto get_key();
+		//	auto get_key();
 	};
 }; // namespace slljit

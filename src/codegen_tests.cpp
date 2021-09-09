@@ -8,7 +8,6 @@ using namespace llvm;
 using namespace llvm::orc;
 using namespace slljit;
 
-
 static std::map<char, int> BinopPrecedence;
 
 //===----------------------------------------------------------------------===//
@@ -127,7 +126,7 @@ void GenerateFunc_0()
 	std::string Name{"main"};
 
 	// CODEGEN PTOTOTYPE
-	
+
 	std::vector<Type*> Doubles(Args.size(), LLVM_Builder->getDoubleTy());
 	FunctionType* FT = FunctionType::get(LLVM_Builder->getDoubleTy(), Doubles, false);
 
@@ -140,7 +139,7 @@ void GenerateFunc_0()
 
 	// CODEGEN FUNCTION
 	// Create a new basic block to start insertion into.
-	BasicBlock* BB  = BasicBlock::Create(*LLVM_Context, "entry", TheFunction);
+	BasicBlock* BB = BasicBlock::Create(*LLVM_Context, "entry", TheFunction);
 	LLVM_Builder->SetInsertPoint(BB);
 
 	// Record the function arguments in the NamedValues map.
@@ -158,17 +157,17 @@ void GenerateFunc_0()
 	}
 	std::vector<std::string> VarNames{"x", "y"};
 	{
-		std::string VarName = VarNames[0];
-		auto InitVarName    = Args[0];
-		Value* InitAlloca   = NamedValues[InitVarName];
-		Value* InitVal      = LLVM_Builder->CreateLoad(LLVM_Builder->getDoubleTy(), InitAlloca, InitVarName.c_str());
-		AllocaInst* Alloca  = CreateEntryBlockAlloca(TheFunction, VarName);
+		std::string VarName    = VarNames[0];
+		auto InitVarName       = Args[0];
+		AllocaInst* InitAlloca = NamedValues[InitVarName];
+		Value* InitVal         = LLVM_Builder->CreateLoad(InitAlloca->getAllocatedType(), InitAlloca, InitVarName.c_str());
+		AllocaInst* Alloca     = CreateEntryBlockAlloca(TheFunction, VarName);
 		// INIT VARIBALE
 		LLVM_Builder->CreateStore(InitVal, Alloca);
 		// Remember this binding.
 		NamedValues[VarName] = Alloca;
-		Value* V             = NamedValues[VarName];
-		Value* LHS           = LLVM_Builder->CreateLoad(V, VarName.c_str());
+		AllocaInst* V        = NamedValues[VarName];
+		Value* LHS           = LLVM_Builder->CreateLoad(V->getAllocatedType(), V, VarName.c_str());
 		Value* RHS           = ConstantFP::get(*LLVM_Context, APFloat(5.0));
 		Value* result        = LLVM_Builder->CreateFAdd(LHS, RHS, "addtmp");
 		LLVM_Builder->CreateStore(result, Alloca);
@@ -183,10 +182,10 @@ void GenerateFunc_0()
 		LLVM_Builder->CreateStore(InitVal, Alloca);
 		// Remember this binding.
 		NamedValues[VarName] = Alloca;
-		Value* V             = NamedValues[VarName];
-		Value* LHS           = LLVM_Builder->CreateLoad(V, VarName.c_str());
-		Value* V_rhs         = NamedValues[VarNames[0]];
-		Value* RHS           = LLVM_Builder->CreateLoad(V_rhs, VarNames[0].c_str());
+		AllocaInst* V        = NamedValues[VarName];
+		Value* LHS           = LLVM_Builder->CreateLoad(V->getAllocatedType(), V, VarName.c_str());
+		AllocaInst* V_rhs    = NamedValues[VarNames[0]];
+		Value* RHS           = LLVM_Builder->CreateLoad(V_rhs->getAllocatedType(), V_rhs, VarNames[0].c_str());
 		Value* result        = LLVM_Builder->CreateFMul(LHS, RHS, "multmp");
 		LLVM_Builder->CreateStore(result, Alloca);
 		retval = result;
@@ -336,7 +335,7 @@ void GenerateFunc_6()
 	auto& g_list = LLVM_Module->getGlobalList();
 	for (auto& var : g_list)
 	{
-		auto name = var.getName();
+		auto name       = var.getName();
 		auto const nsz_ = name.size();
 	}
 	/*ConstantPointerNull::get(Type::getDoublePtrTy(*LLVM_Context));
@@ -476,8 +475,8 @@ int main()
 
 	GenerateFunc_0();
 
-	auto RT = shllJIT->getMainJITDylib().createResourceTracker();
-	auto TSM = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
+	auto RT   = shllJIT->getMainJITDylib().createResourceTracker();
+	auto TSM  = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
 	Error err = shllJIT->addModule(std::move(TSM), RT);
 	shllJIT->getMainJITDylib().dump(dbgs());
 	//InitializeModuleAndPassManager();
@@ -494,8 +493,8 @@ int main()
 
 	GenerateFunc_1();
 
-	RT  = shllJIT->getMainJITDylib().createResourceTracker();
-	TSM = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
+	RT         = shllJIT->getMainJITDylib().createResourceTracker();
+	TSM        = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
 	Error err2 = shllJIT->addModule(std::move(TSM), RT);
 	shllJIT->getMainJITDylib().dump(dbgs());
 	InitializeModuleAndPassManager();
@@ -522,10 +521,10 @@ int main()
 	err = shllJIT->addModule(std::move(TSM), RT);
 	InitializeModuleAndPassManager();
 
-	auto ExprSymbol_gptr = ExitOnError() (shllJIT->lookup("global_x_ptr"));
+	auto ExprSymbol_gptr = ExitOnError()(shllJIT->lookup("global_x_ptr"));
 	assert(ExprSymbol_gptr && "Function not found");
 
-	auto ExprSymbol_ptr = ExitOnError() (shllJIT->lookup("loader"));
+	auto ExprSymbol_ptr = ExitOnError()(shllJIT->lookup("loader"));
 	assert(ExprSymbol_ptr && "Function not found");
 
 	data_test d{1, 2};
@@ -534,7 +533,7 @@ int main()
 	__int32 (*_FP__ptr)(__int8* base_ptr) = (__int32 (*)(__int8* base_ptr))(intptr_t)(ExprSymbol_ptr.getAddress());
 	auto t_fp_ptr                         = _FP__ptr(reinterpret_cast<__int8*>(&d));
 
-	auto ExprSymbol_get_global_ptr = ExitOnError() (shllJIT->lookup("get_global"));
+	auto ExprSymbol_get_global_ptr = ExitOnError()(shllJIT->lookup("get_global"));
 	assert(ExprSymbol_get_global_ptr && "Function not found");
 
 	__int32 (*_FP__get_global)() = (__int32 (*)())(intptr_t)(ExprSymbol_get_global_ptr.getAddress());

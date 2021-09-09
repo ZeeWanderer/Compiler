@@ -22,7 +22,6 @@
 #include "llvm/Transforms/InstCombine/InstCombine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
-#include "AST.h"
 #include <algorithm>
 #include <map>
 #include <memory>
@@ -158,7 +157,6 @@ namespace slljit
 
 		Expected<JITEvaluatedSymbol> lookup(StringRef Name)
 		{
-			auto test = Mangle(Name.str());
 			return ES->lookup({&MainJD}, Mangle(Name.str()));
 		}
 	};

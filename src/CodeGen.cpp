@@ -53,7 +53,7 @@ namespace slljit
 		uint32_t idx = 0;
 		for (auto& g_var : g_list)
 		{
-			Value* gep = m_local_context.LLVM_Builder->CreateGEP(data_pointer, indices);
+			Value* gep = m_local_context.LLVM_Builder->CreateGEP(loader_struct_type, data_pointer, indices);
 			m_local_context.LLVM_Builder->CreateStore(gep, &g_var);
 			idx++;
 			indices[1] = m_local_context.LLVM_Builder->getInt32(idx);
@@ -132,7 +132,7 @@ namespace slljit
 
 		auto TSM = ThreadSafeModule(std::move(m_local_context.LLVM_Module), std::move(m_local_context.LLVM_Context));
 
-	llvm:
+	
 		Error err = m_context.shllJIT->addModule(std::move(TSM), RT);
 
 #if _DEBUG

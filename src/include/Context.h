@@ -32,6 +32,8 @@ namespace slljit
 		std::unique_ptr<legacy::PassManager> LLVM_PM;
 		std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 		std::map<char, int> BinopPrecedence;
+
+		JITDylib& JD;
 		//	VModuleKey module_key;
 
 	public:

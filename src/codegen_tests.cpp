@@ -21,6 +21,7 @@ static std::map<std::string, AllocaInst*> NamedValues;
 static std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
 static std::unique_ptr<legacy::PassManager> LLVM_PM;
 static std::unique_ptr<ShaderJIT> shllJIT;
+static JITDylib* JD;
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
@@ -54,6 +55,8 @@ static void InitializeModuleAndPassManager()
 
 	LLVM_Module = std::make_unique<Module>("codegen_tests", *LLVM_Context);
 	LLVM_Module->setDataLayout(shllJIT->getDataLayout());
+
+	JD = &shllJIT->create_new_JITDylib();
 
 	// Create a new pass manager attached to it.
 	LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
@@ -475,14 +478,14 @@ int main()
 
 	GenerateFunc_0();
 
-	auto RT   = shllJIT->getMainJITDylib().createResourceTracker();
+	auto RT   = JD->getDefaultResourceTracker();
 	auto TSM  = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
 	Error err = shllJIT->addModule(std::move(TSM), RT);
-	shllJIT->getMainJITDylib().dump(dbgs());
+	JD->dump(dbgs());
 	//InitializeModuleAndPassManager();
 
 	// CALL FUNCTIONSIN CPP
-	auto ExprSymbol = ExitOnError()(shllJIT->lookup("main"));
+	auto ExprSymbol = ExitOnError()(shllJIT->lookup("main", *JD));
 	assert(ExprSymbol && "Function not found");
 
 	// Get the symbol's address and cast it to the right type (takes no
@@ -493,14 +496,13 @@ int main()
 
 	GenerateFunc_1();
 
-	RT         = shllJIT->getMainJITDylib().createResourceTracker();
+	RT         = JD->getDefaultResourceTracker();
 	TSM        = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
 	Error err2 = shllJIT->addModule(std::move(TSM), RT);
-	shllJIT->getMainJITDylib().dump(dbgs());
-	InitializeModuleAndPassManager();
+	JD->dump(dbgs());
 
 	// CALL FUNCTIONSIN CPP
-	ExprSymbol = ExitOnError()(shllJIT->lookup("main"));
+	ExprSymbol = ExitOnError()(shllJIT->lookup("main", *JD));
 	assert(ExprSymbol && "Function not found");
 
 	double (*FP_)(double a) = (double (*)(double a))(intptr_t)(ExprSymbol.getAddress());
@@ -516,15 +518,14 @@ int main()
 	GenerateFunc_2();
 	LLVM_Module->dump();
 
-	RT  = shllJIT->getMainJITDylib().createResourceTracker();
+	RT  = JD->getDefaultResourceTracker();
 	TSM = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
 	err = shllJIT->addModule(std::move(TSM), RT);
-	InitializeModuleAndPassManager();
 
-	auto ExprSymbol_gptr = ExitOnError()(shllJIT->lookup("global_x_ptr"));
+	auto ExprSymbol_gptr = ExitOnError()(shllJIT->lookup("global_x_ptr", *JD));
 	assert(ExprSymbol_gptr && "Function not found");
 
-	auto ExprSymbol_ptr = ExitOnError()(shllJIT->lookup("loader"));
+	auto ExprSymbol_ptr = ExitOnError()(shllJIT->lookup("loader", *JD));
 	assert(ExprSymbol_ptr && "Function not found");
 
 	data_test d{1, 2};
@@ -533,7 +534,7 @@ int main()
 	__int32 (*_FP__ptr)(__int8* base_ptr) = (__int32 (*)(__int8* base_ptr))(intptr_t)(ExprSymbol_ptr.getAddress());
 	auto t_fp_ptr                         = _FP__ptr(reinterpret_cast<__int8*>(&d));
 
-	auto ExprSymbol_get_global_ptr = ExitOnError()(shllJIT->lookup("get_global"));
+	auto ExprSymbol_get_global_ptr = ExitOnError()(shllJIT->lookup("get_global", *JD));
 	assert(ExprSymbol_get_global_ptr && "Function not found");
 
 	__int32 (*_FP__get_global)() = (__int32 (*)())(intptr_t)(ExprSymbol_get_global_ptr.getAddress());
@@ -549,10 +550,9 @@ int main()
 
 	GenerateFunc_6();
 	LLVM_Module->dump();
-	RT  = shllJIT->getMainJITDylib().createResourceTracker();
+	RT  = JD->getDefaultResourceTracker();
 	TSM = ThreadSafeModule(move(LLVM_Module), move(LLVM_Context));
 	err = shllJIT->addModule(std::move(TSM), RT);
-	InitializeModuleAndPassManager();
 	//auto ExprSymbol_global_x_ptr_ptr = shllJIT->findSymbol("global_x_ptr_ptr");
 	//double (*_FPglobal_x_ptr_ptr)()  = (double (*)())(intptr_t)cantFail(ExprSymbol_get_global_ptr.getAddress());
 	//_FPglobal_x_ptr_ptr();

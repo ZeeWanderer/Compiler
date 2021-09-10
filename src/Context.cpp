@@ -34,6 +34,7 @@ namespace slljit
 		//	TM.setOptLevel(CodeGenOpt::Level::Aggressive);
 	}
 	LocalContext::LocalContext(Context& m_context)
+	    : JD(m_context.shllJIT->create_new_JITDylib())
 	{
 		BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};
 

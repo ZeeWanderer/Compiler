@@ -128,7 +128,7 @@ namespace slljit
 
 		//	fprintf(stderr, "; Assembly:\n%s", outStr.c_str());
 #endif
-		auto RT = m_context.shllJIT->getMainJITDylib().createResourceTracker();
+		auto RT = m_local_context.JD.getDefaultResourceTracker();
 
 		auto TSM = ThreadSafeModule(std::move(m_local_context.LLVM_Module), std::move(m_local_context.LLVM_Context));
 
@@ -140,7 +140,7 @@ namespace slljit
 			fprintf(stderr, "; error\n");
 
 		fprintf(stderr, "; JDlib:\n");
-		m_context.shllJIT->getMainJITDylib().dump(dbgs());
+		m_local_context.JD.dump(dbgs());
 #endif
 	}
 }; // namespace slljit

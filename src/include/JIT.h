@@ -23,11 +23,14 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include <algorithm>
+#include <string_view>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 #include <fstream>
+#include <charconv>
+#include <iostream>
 
 namespace slljit
 {
@@ -55,6 +58,8 @@ namespace slljit
 	class ShaderJIT
 	{
 	private:
+		atomic_uint64_t JD_counter = 0;
+
 		std::unique_ptr<ExecutionSession> ES;
 
 		llvm::DataLayout DL;
@@ -62,8 +67,6 @@ namespace slljit
 
 		RTDyldObjectLinkingLayer ObjectLayer;
 		IRCompileLayer CompileLayer;
-
-		JITDylib& MainJD;
 
 #ifdef _DEBUG
 		DummyCache m_dummy_cache;
@@ -89,10 +92,7 @@ namespace slljit
 		      ,
 		      CompileLayer(*this->ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(std::move(JTMB)))
 #endif // END
-		      ,
-		      MainJD(this->ES->createBareJITDylib("main_JITDylib"))
 		{
-			MainJD.addGenerator(cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
 
 			if (JTMB.getTargetTriple().isOSBinFormatCOFF())
 			{
@@ -143,21 +143,29 @@ namespace slljit
 			return DL;
 		}
 
-		JITDylib& getMainJITDylib()
+		JITDylib& create_new_JITDylib()
 		{
-			return MainJD;
+			const auto JD_counter_ = JD_counter++;
+			constexpr auto size    = ("18,446,744,073,709,551,615\n"sv).length();
+			std::array<char, size> str;
+
+			auto [ptr, ec]           = std::to_chars(str.data(), str.data() + str.size(), JD_counter_);
+			const auto JD_counter_sv = string_view(str.data(), ptr);
+
+			auto& JD = this->ES->createBareJITDylib(string(JD_counter_sv));
+			JD.addGenerator(cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL.getGlobalPrefix())));
+
+			return JD;
 		}
 
-		Error addModule(ThreadSafeModule TSM, ResourceTrackerSP RT = nullptr)
+		Error addModule(ThreadSafeModule TSM, ResourceTrackerSP RT)
 		{
-			if (!RT)
-				RT = MainJD.getDefaultResourceTracker();
 			return CompileLayer.add(RT, std::move(TSM));
 		}
 
-		Expected<JITEvaluatedSymbol> lookup(StringRef Name)
+		Expected<JITEvaluatedSymbol> lookup(StringRef Name, JITDylib& JD)
 		{
-			return ES->lookup({&MainJD}, Mangle(Name.str()));
+			return ES->lookup({&JD}, Mangle(Name.str()));
 		}
 	};
 }; // namespace slljit

@@ -48,8 +48,8 @@ namespace slljit
 
 			//	auto loader_symbol = m_context.shllJIT->findSymbol("__layout_loader_", m_local_context.module_key);
 			//	auto symbol        = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
-			auto symbol        = ExitOnError()(m_context.shllJIT->lookup("main"));
-			auto loader_symbol = ExitOnError()(m_context.shllJIT->lookup("__layout_loader_"));
+			auto symbol        = ExitOnError()(m_context.shllJIT->lookup("main", m_local_context.JD));
+			auto loader_symbol = ExitOnError()(m_context.shllJIT->lookup("__layout_loader_", m_local_context.JD));
 			main_func          = (double (*)())(intptr_t)symbol.getAddress();
 			loader__           = (void (*)(T*))(intptr_t)loader_symbol.getAddress();
 		}

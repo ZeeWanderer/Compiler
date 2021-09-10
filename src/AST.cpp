@@ -34,7 +34,7 @@ namespace slljit
 				if (gVar->isConstant())
 					return LogErrorV("Trying to store in constant global");
 
-				auto ptr = m_local_context.LLVM_Builder->CreateLoad(gVar, LHSE->getName());
+				auto ptr = m_local_context.LLVM_Builder->CreateLoad(gVar->getValueType(), gVar, LHSE->getName());
 				//	Value* gep = m_local_context.LLVM_Builder->CreateGEP(Type::getDoubleTy(*m_local_context.LLVM_Context), ptr, m_local_context.LLVM_Builder->getInt32(0), "ptr_");
 				m_local_context.LLVM_Builder->CreateStore(Val, ptr);
 				return Val;
@@ -153,21 +153,22 @@ namespace slljit
 		if (gVar)
 		{
 			if (gVar->isConstant())
-				return m_local_context.LLVM_Builder->CreateLoad(gVar, Name);
+				return m_local_context.LLVM_Builder->CreateLoad(gVar->getValueType(), gVar, Name);
 			else
 			{
 				// TODO: load a single time
-				auto ptr = m_local_context.LLVM_Builder->CreateLoad(gVar, Name);
-				return m_local_context.LLVM_Builder->CreateLoad(ptr, Name);
+				auto ptr     = m_local_context.LLVM_Builder->CreateLoad(gVar->getValueType(), gVar, Name);
+				auto valType = static_cast<PointerType*>(gVar->getValueType())->getElementType();
+				return m_local_context.LLVM_Builder->CreateLoad(valType, ptr, Name);
 			}
 		}
 
-		Value* V = m_local_context.NamedValues[Name];
+		auto V = m_local_context.NamedValues[Name];
 		if (!V)
 			return LogErrorV("Unknown variable name");
 
 		// Load the value.
-		return m_local_context.LLVM_Builder->CreateLoad(V, Name.c_str());
+		return m_local_context.LLVM_Builder->CreateLoad(V->getAllocatedType(), V, Name.c_str());
 	}
 
 	Value* UnaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)

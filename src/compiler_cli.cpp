@@ -122,9 +122,9 @@ int main(int argc, char** argv)
 	m_program.compile(source_code, m_layout);
 	auto end = std::chrono::steady_clock::now();
 
-	const auto compile_time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+	const auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 
-	std::cout << "compile_time = " << compile_time.count() << "[µs]" << std::endl;
+	std::cout << "compile_time = " << compile_time.count() << "[ms]" << std::endl;
 
 	Data data{10.0};
 
@@ -132,9 +132,9 @@ int main(int argc, char** argv)
 	auto retval = m_program.run(&data);
 	end         = std::chrono::steady_clock::now();
 
-	const auto run_time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+	const auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
-	std::cout << "run_time = " << run_time.count() << "[µs]" << std::endl;
+	std::cout << "run_time = " << run_time.count() << "[ns]" << std::endl;
 
 	//	unsigned char* ptr = reinterpret_cast<unsigned char*>(m_program.main_func);
 

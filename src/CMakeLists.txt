@@ -50,7 +50,7 @@ set(LLVM_TARGETS
   LLVMFrontendOpenMP
 )
 
-set(COMPILERCLI_SRC
+set(slljit_INTERFACE
 		include/pch.h
 		include/AST.h
 		include/CodeGen.h
@@ -59,21 +59,33 @@ set(COMPILERCLI_SRC
 		include/Layout.h
 		include/Parser.h
 		include/Program.hpp
-		include/Tokenizer.h
+		include/Tokenizer.h)
+
+set(slljit_SRC
 		pch.cpp
 		AST.cpp
 		CodeGen.cpp
 		Context.cpp
 		Layout.cpp
 		Parser.cpp
-		Tokenizer.cpp
+		Tokenizer.cpp)
+
+add_library(slljit STATIC ${slljit_SRC} ${slljit_INTERFACE})
+target_include_directories(slljit PUBLIC ${LLVM_INCLUDE_DIRS})
+target_include_directories(slljit PUBLIC "./include")
+target_link_libraries(slljit ${LLVM_TARGETS})
+add_dependencies(slljit ${LLVM_TARGETS})
+
+set(CompilerCLI_SRC
+		include/pch.h
+		pch.cpp
 		compiler_cli.cpp)
 
-add_executable (CompilerCLI ${COMPILERCLI_SRC})
+add_executable (CompilerCLI ${CompilerCLI_SRC})
 target_include_directories(CompilerCLI PUBLIC ${LLVM_INCLUDE_DIRS})
 target_include_directories(CompilerCLI PUBLIC "./include")
-target_link_libraries(CompilerCLI ${LLVM_TARGETS})
-add_dependencies(CompilerCLI ${LLVM_TARGETS})
+target_link_libraries(CompilerCLI slljit)
+add_dependencies(CompilerCLI slljit)
 
 set(LLVM_K_TEST_SRC
 		include/pch.h
@@ -97,4 +109,6 @@ target_include_directories(codegen_tests PUBLIC "./include")
 target_link_libraries(codegen_tests ${LLVM_TARGETS})
 add_dependencies(codegen_tests ${LLVM_TARGETS})
 
-install(TARGETS CompilerCLI llvm_k_test codegen_tests)
+#install(TARGETS slljit CompilerCLI llvm_k_test codegen_tests)
+install(TARGETS slljit)
+install(FILES ${slljit_INTERFACE} DESTINATION include)

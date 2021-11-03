@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "Parser.h"
 #include "AST.h"
+#include "Enums.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -9,6 +10,8 @@ using namespace std;
 
 namespace slljit
 {
+	const std::map<std::string, BasicTypeID> basic_types_id_map = {{"double", doubleTyID}, {"int64", int64TyID}};
+
 	/// GetTokPrecedence - Get the precedence of the pending binary operator token.
 
 	int Parser::getNextToken()
@@ -213,6 +216,8 @@ namespace slljit
 
 	std::unique_ptr<ExprAST> Parser::ParseVarExpr()
 	{
+		auto VarTypeStr = m_tokenizer.get_type_identifier();
+		auto VarTypeID  = basic_types_id_map.at(VarTypeStr); // TODO: error check
 		getNextToken(); // eat type.
 
 		std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
@@ -248,7 +253,7 @@ namespace slljit
 				return LogError("expected identifier list after var");
 		}
 
-		return std::make_unique<VarExprAST>(std::move(VarNames));
+		return std::make_unique<VarExprAST>(std::move(VarTypeID), std::move(VarNames));
 	}
 
 	/// primary

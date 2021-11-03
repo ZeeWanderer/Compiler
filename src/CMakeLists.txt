@@ -52,6 +52,7 @@ set(LLVM_TARGETS
 
 set(slljit_INTERFACE
 		include/pch.h
+		include/Enums.h
 		include/AST.h
 		include/CodeGen.h
 		include/Context.h

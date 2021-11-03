@@ -6,6 +6,8 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Instructions.h"
 
+#include "Enums.h"
+
 namespace slljit
 {
 	using namespace llvm;
@@ -222,11 +224,12 @@ namespace slljit
 	/// VarExprAST - Expression class for g_var/in
 	class VarExprAST : public ExprAST
 	{
+		BasicTypeID VarType;
 		std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
 
 	public:
-		VarExprAST(std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames)
-		    : VarNames(std::move(VarNames))
+		VarExprAST(BasicTypeID VarType, std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames)
+		    : VarType(std::move(VarType)), VarNames(std::move(VarNames))
 		{
 		}
 
@@ -311,5 +314,5 @@ namespace slljit
 	Function* getFunction(std::string Name, Context& m_context, LocalContext& m_local_context);
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
-	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, Context& m_context, LocalContext& m_local_context);
+	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, BasicTypeID VarType, Context& m_context, LocalContext& m_local_context);
 }; // namespace slljit

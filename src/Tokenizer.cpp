@@ -16,6 +16,8 @@ namespace slljit
 
 	const map<string, Token> Tokenizer::reserved_identifier_set = {{"extern", tok_extern}, {"if", tok_if}, {"else", tok_else}, {"for", tok_for}};
 
+	const set<string> basic_types_identifier_set = {"double", "int64"};
+
 	inline int Tokenizer::_getchar()
 	{
 		static size_t source_idx = 0;
@@ -41,7 +43,7 @@ namespace slljit
 
 	inline bool Tokenizer::is_id_start_char(int c)
 	{
-		return identifier_start_charset.find(c) != identifier_start_charset.end();
+		return identifier_start_charset.contains(c);
 	}
 
 	inline bool Tokenizer::is_id_char(int c)
@@ -67,7 +69,7 @@ namespace slljit
 				IdentifierStr += LastChar;
 
 			// BASIC TYPES
-			if (IdentifierStr == "double")
+			if (basic_types_identifier_set.contains(IdentifierStr))
 			{
 				TypeIdentifierStr = IdentifierStr;
 				return tok_type;

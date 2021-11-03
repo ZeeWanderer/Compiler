@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <list>
 #include <string>
 #include <vector>
@@ -6,6 +6,7 @@
 
 #include "Tokenizer.h"
 #include "AST.h"
+#include "Enums.h"
 
 namespace slljit
 {

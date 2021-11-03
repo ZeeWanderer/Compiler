@@ -2,6 +2,7 @@
 #include "AST.h"
 
 #include "Context.h"
+#include "Parser.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -10,6 +11,20 @@ using namespace std;
 
 namespace slljit
 {
+	llvm::Type* get_llvm_type(BasicTypeID TyID, LocalContext& m_local_context)
+	{
+		switch (TyID)
+		{
+		case doubleTyID:
+			return m_local_context.LLVM_Builder->getDoubleTy();
+		case int64TyID:
+			return m_local_context.LLVM_Builder->getInt64Ty();
+		}
+	}
+
+	// type from, type to -> cast op
+	const map<std::pair<llvm::Type::TypeID, llvm::Type::TypeID>, llvm::Instruction::CastOps> llvm_types_to_cast_op = {{{Type::DoubleTyID, Type::IntegerTyID}, Instruction::FPToSI}, {{Type::IntegerTyID, Type::DoubleTyID}, Instruction::SIToFP}};
+
 	Value* BinaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
 		// Special case '=' because we don't want to emit the LHS as an expression.
@@ -41,9 +56,16 @@ namespace slljit
 			}
 
 			// Look up variable.
-			Value* Variable = m_local_context.NamedValues[LHSE->getName()];
+			AllocaInst* Variable = m_local_context.NamedValues[LHSE->getName()];
 			if (!Variable)
 				return LogErrorV("Unknown variable name");
+
+			// if types differ cast val to variable type
+			if (Variable->getAllocatedType() != Val->getType())
+			{
+				auto castOP = llvm_types_to_cast_op.at({Val->getType()->getTypeID(), Variable->getAllocatedType()->getTypeID()});
+				Val         = m_local_context.LLVM_Builder->CreateCast(castOP, Val, Variable->getAllocatedType());
+			}
 
 			m_local_context.LLVM_Builder->CreateStore(Val, Variable);
 			return Val;
@@ -54,21 +76,60 @@ namespace slljit
 		if (!L || !R)
 			return nullptr;
 
-		switch (Op)
+		// implict type conversion
+		// if any of the operands is floating type and other is not, convert all of them to floating type
+		// Currently there is single floating type, in case of multiple convert to the widest.
+		if (L->getType() != R->getType())
 		{
-		case '+': return m_local_context.LLVM_Builder->CreateFAdd(L, R, "addtmp");
-		case '-': return m_local_context.LLVM_Builder->CreateFSub(L, R, "subtmp");
-		case '*': return m_local_context.LLVM_Builder->CreateFMul(L, R, "multmp");
-		case '/': return m_local_context.LLVM_Builder->CreateFDiv(L, R, "divtmp");
-		case '<':
-			L = m_local_context.LLVM_Builder->CreateFCmpULT(L, R, "cmptmp");
-			// Convert bool 0/1 to double 0.0 or 1.0
-			return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
-		case '>':
-			L = m_local_context.LLVM_Builder->CreateFCmpUGT(L, R, "cmptmp");
-			// Convert bool 0/1 to double 0.0 or 1.0
-			return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
-		default: break;
+			if (L->getType()->isIntegerTy())
+			{
+				L = m_local_context.LLVM_Builder->CreateCast(Instruction::SIToFP, L, m_local_context.LLVM_Builder->getDoubleTy());
+			}
+			else
+			{
+				R = m_local_context.LLVM_Builder->CreateCast(Instruction::SIToFP, R, m_local_context.LLVM_Builder->getDoubleTy());
+			}
+		}
+
+		// diferentiate floating type and integer ops
+		if (L->getType()->isFloatingPointTy())
+		{
+
+			switch (Op)
+			{
+			case '+': return m_local_context.LLVM_Builder->CreateFAdd(L, R, "addtmp");
+			case '-': return m_local_context.LLVM_Builder->CreateFSub(L, R, "subtmp");
+			case '*': return m_local_context.LLVM_Builder->CreateFMul(L, R, "multmp");
+			case '/': return m_local_context.LLVM_Builder->CreateFDiv(L, R, "divtmp");
+			case '<':
+				L = m_local_context.LLVM_Builder->CreateFCmpULT(L, R, "cmptmp");
+				// Convert bool 0/1 to double 0.0 or 1.0
+				return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
+			case '>':
+				L = m_local_context.LLVM_Builder->CreateFCmpUGT(L, R, "cmptmp");
+				// Convert bool 0/1 to double 0.0 or 1.0
+				return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
+			default: break;
+			}
+		}
+		else
+		{
+			switch (Op)
+			{
+			case '+': return m_local_context.LLVM_Builder->CreateAdd(L, R, "addtmp");
+			case '-': return m_local_context.LLVM_Builder->CreateSub(L, R, "subtmp");
+			case '*': return m_local_context.LLVM_Builder->CreateMul(L, R, "multmp");
+			case '/': return m_local_context.LLVM_Builder->CreateSDiv(L, R, "divtmp");
+			case '<':
+				L = m_local_context.LLVM_Builder->CreateCmp(CmpInst::Predicate::ICMP_ULT, L, R, "cmptmp");
+				// Convert bool 0/1 to double 0.0 or 1.0
+				return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
+			case '>':
+				L = m_local_context.LLVM_Builder->CreateCmp(CmpInst::Predicate::ICMP_UGT, L, R, "cmptmp");
+				// Convert bool 0/1 to double 0.0 or 1.0
+				return m_local_context.LLVM_Builder->CreateUIToFP(L, Type::getDoubleTy(*m_local_context.LLVM_Context), "booltmp");
+			default: break;
+			}
 		}
 
 		// If it wasn't a builtin binary operator, it must be a user defined one. Emit
@@ -130,10 +191,11 @@ namespace slljit
 
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
-	AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, Context& m_context, LocalContext& m_local_context)
+	AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, BasicTypeID VarType, Context& m_context, LocalContext& m_local_context)
 	{
+		auto var_type = get_llvm_type(VarType, m_local_context);
 		IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
-		return TmpB.CreateAlloca(Type::getDoubleTy(*m_local_context.LLVM_Context), nullptr, VarName);
+		return TmpB.CreateAlloca(var_type, nullptr, VarName);
 	}
 
 	Value* NoOpAST::codegen(Context& m_context, LocalContext& m_local_context)
@@ -400,7 +462,17 @@ namespace slljit
 				InitVal = ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0));
 			}
 
-			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName, m_context, m_local_context);
+			auto value_type = get_llvm_type(VarType, m_local_context);
+
+			auto InitVal_type = InitVal->getType();
+
+			if (InitVal_type != value_type)
+			{
+				auto castOP = llvm_types_to_cast_op.at({InitVal_type->getTypeID(), value_type->getTypeID()});
+				InitVal     = m_local_context.LLVM_Builder->CreateCast(castOP, InitVal, value_type);
+			}
+
+			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName, VarType, m_context, m_local_context);
 			retval             = m_local_context.LLVM_Builder->CreateStore(InitVal, Alloca);
 
 			// Remember the old variable binding so that we can restore the binding when
@@ -465,7 +537,7 @@ namespace slljit
 		for (auto& Arg : TheFunction->args())
 		{
 			// Create an alloca for this variable.
-			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), m_context, m_local_context);
+			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), BasicTypeID::doubleTyID, m_context, m_local_context);
 
 			// Store the initial value into the alloca.
 			m_local_context.LLVM_Builder->CreateStore(&Arg, Alloca);

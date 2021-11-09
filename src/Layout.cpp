@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Layout.h"
 
 using namespace slljit;
@@ -20,4 +20,11 @@ namespace slljit
 		constant_globals.emplace(pair{name, ConstantGlobalDefinition{value, type}});
 		names.insert(name);
 	}
+
+	void Layout::addConsatant(string name, int64_t value, LayoutVarTypes type)
+	{
+		constant_globals.emplace(pair{name, ConstantGlobalDefinition{value, type}});
+		names.insert(name);
+	}
+
 }; // namespace slljit

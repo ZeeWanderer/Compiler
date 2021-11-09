@@ -79,21 +79,18 @@ struct Data
 	double iter;
 	double start_0;
 	double start_1;
+	int64_t Ni;
 };
 
 int main(int argc, char** argv)
 {
-	//	for (auto idx = 0; idx<argc;idx++)
-	//{
-	//	printf("%s ", argv[idx]);
-	//}
-
-	//	const auto test = cl::ParseCommandLineOptions(argc, argv);
-
 	Context m_context;
 	Program<Data> m_program(m_context);
 	Layout m_layout;
 	m_layout.addMember("N", ::Kdouble, offsetof(Data, iter));
+	m_layout.addMember("Ni", ::Kint64, offsetof(Data, Ni));
+	m_layout.addConsatant("v", 5.0, ::Kdouble);
+	m_layout.addConsatant("vi", 14.0, ::Kint64);
 	//	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
 	//	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
 	//	m_layout.addConsatant("v", 5, ::Kdouble);
@@ -101,8 +98,15 @@ int main(int argc, char** argv)
 	const std::string source_code = R"(
 	double main()
 	{
+		int64 test = Ni;
 		double left = 0;
 		double right = 1;
+
+		test = right;
+
+		int64 test_1 = test + vi;
+		int64 test_2 = test + test_1 + v;
+
 		if(N < 2)
 		{
 			return N;
@@ -118,7 +122,8 @@ int main(int argc, char** argv)
 		return right;
 	}
 )";
-	auto begin                    = std::chrono::steady_clock::now();
+
+	auto begin = std::chrono::steady_clock::now();
 	m_program.compile(source_code, m_layout);
 	auto end = std::chrono::steady_clock::now();
 
@@ -126,7 +131,7 @@ int main(int argc, char** argv)
 
 	std::cout << "compile_time = " << compile_time.count() << "[ms]" << std::endl;
 
-	Data data{10.0};
+	Data data{10.0, 10.0, 10.0, 15};
 
 	begin       = std::chrono::steady_clock::now();
 	auto retval = m_program.run(&data);

@@ -13,23 +13,30 @@ namespace slljit
 {
 	void CodeGen::compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout)
 	{
-		std::vector<Type*> StructMembers;
+		std::vector<Type*> StructMembers; // layout structure
 		StructMembers.reserve(m_layout.globals.size());
 
-		for (auto& global : m_layout.globals)
+		// Insert variable globals
+		// Globals contain pointers to layout members, init with nullptr
+		for (auto& global : m_layout.globals) 
 		{
-			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, Type::getDoublePtrTy(*m_local_context.LLVM_Context));
-			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.name);
-			gVar->setLinkage(GlobalValue::ExternalLinkage);
-			gVar->setInitializer(ConstantPointerNull::get(Type::getDoublePtrTy(*m_local_context.LLVM_Context)));
-
-			//	indices.emplace_back(ConstantInt::get(m_context.LLVM_Context, APInt(32, struct_idx, true)));
-
+			Type* type_;
 			switch (global.type)
 			{
-			case slljit::Kdouble: StructMembers.emplace_back(Type::getDoubleTy(*m_local_context.LLVM_Context));
+			case slljit::Kdouble:
+				type_ = Type::getDoubleTy(*m_local_context.LLVM_Context);
+				break;
+			case slljit::Kint64:
+				type_ = Type::getInt64Ty(*m_local_context.LLVM_Context);
+				break;
 			default: break;
 			}
+			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, type_->getPointerTo());
+			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.name);
+			gVar->setLinkage(GlobalValue::ExternalLinkage);
+			gVar->setInitializer(ConstantPointerNull::get(type_->getPointerTo()));
+
+			StructMembers.emplace_back(type_);
 		}
 
 		auto loader_struct_type = StructType::create(*m_local_context.LLVM_Context, StructMembers, "layout__", false);
@@ -51,6 +58,7 @@ namespace slljit
 		auto& g_list = m_local_context.LLVM_Module->getGlobalList();
 		std::vector<Value*> indices{m_local_context.LLVM_Builder->getInt32(0), m_local_context.LLVM_Builder->getInt32(0)};
 		uint32_t idx = 0;
+		// Load offsets into variable globals
 		for (auto& g_var : g_list)
 		{
 			Value* gep = m_local_context.LLVM_Builder->CreateGEP(loader_struct_type, data_pointer, indices);
@@ -60,12 +68,28 @@ namespace slljit
 		}
 		m_local_context.LLVM_Builder->CreateRet(nullptr);
 
+		// Insert constant globals
 		for (auto& global : m_layout.constant_globals)
 		{
-			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, Type::getDoubleTy(*m_local_context.LLVM_Context));
+			Type* type_;
+			Constant* init_c;
+			switch (global.second.type)
+			{
+			case slljit::Kdouble:
+				type_ = Type::getDoubleTy(*m_local_context.LLVM_Context);
+				init_c = ConstantFP::get(*m_local_context.LLVM_Context, APFloat(global.second.valueD));
+				break;
+			case slljit::Kint64:
+				type_ = Type::getInt64Ty(*m_local_context.LLVM_Context);
+				init_c = ConstantInt::get(*m_local_context.LLVM_Context, APInt(64, global.second.valueI64, true));
+				break;
+			default: break;
+			}
+
+			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, type_);
 			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.first);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
-			gVar->setInitializer(ConstantFP::get(*m_local_context.LLVM_Context, APFloat(global.second.value)));
+			gVar->setInitializer(init_c);
 			gVar->setConstant(true);
 		}
 	}

@@ -250,6 +250,11 @@ namespace slljit
 	{
 		if (Value* RetVal = Operand->codegen(m_context, m_local_context))
 		{
+			if (RetVal->getType()->isIntegerTy())
+			{
+				auto castOP = llvm_types_to_cast_op.at({RetVal->getType()->getTypeID(), m_local_context.LLVM_Builder->getDoubleTy()->getTypeID()});
+				RetVal      = m_local_context.LLVM_Builder->CreateCast(castOP, RetVal, m_local_context.LLVM_Builder->getDoubleTy());
+			}
 			// Finish off the function.
 			m_local_context.LLVM_Builder->CreateRet(RetVal);
 

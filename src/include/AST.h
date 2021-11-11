@@ -6,7 +6,7 @@
 #include "llvm/IR/Value.h"
 #include "llvm/IR/Instructions.h"
 
-#include "Enums.h"
+#include "Types.h"
 
 namespace slljit
 {
@@ -26,6 +26,18 @@ namespace slljit
 	class ExprAST
 	{
 	public:
+		TypeID type_ = none;
+
+		ExprAST() = default;
+
+		ExprAST(TypeID type_)
+		    : type_(std::move(type_)){};
+
+		virtual TypeID getType()
+		{
+			return type_;
+		}
+
 		virtual ~ExprAST() = default;
 
 		virtual bool bExpectSemicolon()
@@ -52,6 +64,7 @@ namespace slljit
 	{
 	public:
 		NoOpAST()
+		    : ExprAST(std::move(none))
 		{
 		}
 
@@ -71,7 +84,7 @@ namespace slljit
 
 	public:
 		NumberExprAST(double Val)
-		    : Val(Val)
+		    : ExprAST(std::move(doubleTyID)), Val(Val)
 		{
 		}
 
@@ -82,10 +95,9 @@ namespace slljit
 	class VariableExprAST : public ExprAST
 	{
 		std::string Name;
-
 	public:
-		VariableExprAST(const std::string& Name)
-		    : Name(Name)
+		VariableExprAST(const std::string& Name, TypeID type_)
+		    : Name(Name), ExprAST(std::move(type_))
 		{
 		}
 
@@ -106,6 +118,7 @@ namespace slljit
 		UnaryExprAST(char Opcode, std::unique_ptr<ExprAST> Operand)
 		    : Opcode(Opcode), Operand(std::move(Operand))
 		{
+			type_ = this->Operand->getType();
 		}
 
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
@@ -119,6 +132,7 @@ namespace slljit
 		ReturnExprAST(std::unique_ptr<ExprAST> Operand)
 		    : Operand(std::move(Operand))
 		{
+			type_ = doubleTyID; //this->Operand->getType();
 		}
 
 		virtual bool bIsTerminator() override
@@ -139,6 +153,9 @@ namespace slljit
 		BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
 		    : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS))
 		{
+			auto LHSTy = this->LHS->getType();
+			auto RHSTy = this->RHS->getType();
+			type_      = LHSTy + RHSTy;
 		}
 
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
@@ -154,6 +171,7 @@ namespace slljit
 		CallExprAST(const std::string& Callee, std::vector<std::unique_ptr<ExprAST>> Args)
 		    : Callee(Callee), Args(std::move(Args))
 		{
+			type_ = doubleTyID;
 		}
 
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
@@ -224,14 +242,11 @@ namespace slljit
 	/// VarExprAST - Expression class for g_var/in
 	class VarExprAST : public ExprAST
 	{
-		BasicTypeID VarType;
 		std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
 
 	public:
-		VarExprAST(BasicTypeID VarType, std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames)
-		    : VarType(std::move(VarType)), VarNames(std::move(VarNames))
-		{
-		}
+		VarExprAST(TypeID VarType, std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames)
+		    : ExprAST(std::move(VarType)), VarNames(std::move(VarNames)){};
 
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
@@ -248,7 +263,7 @@ namespace slljit
 
 	public:
 		PrototypeAST(const std::string& Name, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
-		    : Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec)
+		    : Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec), ExprAST(std::move(none))
 		{
 		}
 
@@ -314,5 +329,5 @@ namespace slljit
 	Function* getFunction(std::string Name, Context& m_context, LocalContext& m_local_context);
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
-	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, BasicTypeID VarType, Context& m_context, LocalContext& m_local_context);
+	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, TypeID VarType, Context& m_context, LocalContext& m_local_context);
 }; // namespace slljit

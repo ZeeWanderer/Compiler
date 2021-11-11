@@ -1,7 +1,9 @@
-﻿#include "pch.h"
+﻿#include "include\Parser.h"
+#include "pch.h"
 #include "Parser.h"
 #include "AST.h"
-#include "Enums.h"
+#include "Types.h"
+#include "Layout.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -10,7 +12,8 @@ using namespace std;
 
 namespace slljit
 {
-	const std::map<std::string, BasicTypeID> basic_types_id_map = {{"double", doubleTyID}, {"int64", int64TyID}};
+
+
 
 	/// GetTokPrecedence - Get the precedence of the pending binary operator token.
 
@@ -28,6 +31,20 @@ namespace slljit
 	{
 		m_tokenizer.set_source(source);
 		getNextToken();
+	}
+
+	void Parser::set_variables(Layout& context)
+	{
+		push_scope();
+		for (auto& gl : context.globals)
+		{
+			push_var_into_scope(gl.name, TypeID(gl.type));
+		}
+
+		for (auto& gl : context.constant_globals)
+		{
+			push_var_into_scope(gl.first, TypeID(gl.second.type));
+		}
 	}
 
 	std::pair<list<unique_ptr<PrototypeAST>>, list<unique_ptr<FunctionAST>>> Parser::get_ast()
@@ -48,6 +65,35 @@ namespace slljit
 	void Parser::parse()
 	{
 		MainLoop();
+	}
+
+	inline void Parser::pop_scope()
+	{
+		scope_list.pop_back();
+	}
+
+	inline void Parser::push_scope()
+	{
+		scope_list.emplace_back(map<string, TypeID>());
+	}
+
+	inline void Parser::push_var_into_scope(string name, TypeID type)
+	{
+		auto& current_scope = scope_list.back();
+		current_scope[name] = type;
+	}
+
+	inline TypeID Parser::find_var_in_scope(string name)
+	{
+		for (auto it = scope_list.rbegin(); it < scope_list.rend(); it++)
+		{
+			auto it_ = it->find(name);
+			if (it_ != it->end())
+			{
+				return it_->second;
+			}
+		}
+		return none;
 	}
 
 	int Parser::GetTokPrecedence()
@@ -105,7 +151,11 @@ namespace slljit
 		}
 
 		if (CurTok != '(') // Simple variable ref.
-			return std::make_unique<VariableExprAST>(IdName);
+		{
+			auto type_ = find_var_in_scope(IdName);
+			return std::make_unique<VariableExprAST>(IdName, type_);
+		}
+			
 
 		// Call.
 		getNextToken(); // eat (
@@ -138,6 +188,8 @@ namespace slljit
 
 	std::unique_ptr<ExprAST> Parser::ParseIfExpr()
 	{
+		push_scope();
+
 		getNextToken(); // eat the if.
 
 		if (CurTok != '(')
@@ -172,12 +224,16 @@ namespace slljit
 		{
 			return std::make_unique<IfExprAST>(std::move(Cond), std::move(ifBody), ExprList());
 		}
+
+		pop_scope();
 	}
 
 	/// forexpr ::= 'for' identifier '=' expr ',' expr (',' expr)? 'in' expression
 
 	std::unique_ptr<ExprAST> Parser::ParseForExpr()
 	{
+		push_scope();
+
 		getNextToken(); // eat the for.
 
 		if (CurTok != '(')
@@ -209,6 +265,8 @@ namespace slljit
 			return LogError("Empty loop body.");
 
 		return std::make_unique<ForExprAST>(std::move(Varinit), std::move(Cond), std::move(Body), std::move(Afterloop));
+
+		pop_scope();
 	}
 
 	/// varexpr ::= 'g_var' identifier ('=' expression)?
@@ -242,6 +300,7 @@ namespace slljit
 					return nullptr;
 			}
 
+			push_var_into_scope(Name, VarTypeID);
 			VarNames.push_back(std::make_pair(Name, std::move(Init)));
 
 			// End of g_var list, exit loop.
@@ -432,6 +491,8 @@ namespace slljit
 
 	std::unique_ptr<FunctionAST> Parser::ParseTopLevelTypedExpression()
 	{
+		push_scope();
+
 		getNextToken(); // eat type.
 
 		if (CurTok == tok_identifier)
@@ -453,6 +514,8 @@ namespace slljit
 		{
 			return LogErrorF("Expected identifier after type");
 		}
+
+		pop_scope();
 	}
 
 	/// external ::= 'extern' prototype

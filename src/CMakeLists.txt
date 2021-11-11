@@ -52,7 +52,6 @@ set(LLVM_TARGETS
 
 set(slljit_INTERFACE
 		include/pch.h
-		include/Enums.h
 		include/AST.h
 		include/CodeGen.h
 		include/Context.h
@@ -60,7 +59,8 @@ set(slljit_INTERFACE
 		include/Layout.h
 		include/Parser.h
 		include/Program.hpp
-		include/Tokenizer.h)
+		include/Tokenizer.h 
+		include/Types.h)
 
 set(slljit_SRC
 		pch.cpp
@@ -69,7 +69,8 @@ set(slljit_SRC
 		Context.cpp
 		Layout.cpp
 		Parser.cpp
-		Tokenizer.cpp)
+		Tokenizer.cpp
+		Types.cpp)
 
 add_library(slljit STATIC ${slljit_SRC} ${slljit_INTERFACE})
 target_include_directories(slljit PUBLIC ${LLVM_INCLUDE_DIRS})

@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "Tokenizer.h"
+#include "Types.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -15,8 +16,6 @@ namespace slljit
 	    'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '_'};
 
 	const map<string, Token> Tokenizer::reserved_identifier_set = {{"extern", tok_extern}, {"if", tok_if}, {"else", tok_else}, {"for", tok_for}};
-
-	const set<string> basic_types_identifier_set = {"double", "int64"};
 
 	inline int Tokenizer::_getchar()
 	{

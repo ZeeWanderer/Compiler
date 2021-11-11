@@ -6,7 +6,8 @@
 
 #include "Tokenizer.h"
 #include "AST.h"
-#include "Enums.h"
+#include "Types.h"
+#include "Layout.h"
 
 namespace slljit
 {
@@ -36,6 +37,8 @@ namespace slljit
 		std::list<std::unique_ptr<FunctionAST>> FunctionAST_list;
 		std::list<std::unique_ptr<PrototypeAST>> PrototypeAST_list;
 
+		vector<map<string, TypeID>> scope_list;
+
 		Tokenizer m_tokenizer;
 
 		/// CurTok/getNextToken - Provide a simple token buffer.  CurTok is the current
@@ -49,6 +52,8 @@ namespace slljit
 
 		void set_source(std::string_view source);
 
+		void set_variables(Layout& context);
+
 		std::pair<list<unique_ptr<PrototypeAST>>, list<unique_ptr<FunctionAST>>> get_ast();
 
 		std::list<std::unique_ptr<FunctionAST>> get_function_ast();
@@ -56,6 +61,14 @@ namespace slljit
 		std::list<std::unique_ptr<PrototypeAST>> get_prototype_ast();
 
 		void parse();
+
+		void pop_scope();
+
+		void push_scope();
+
+		void push_var_into_scope(string name, TypeID type);
+
+		TypeID find_var_in_scope(string name);
 
 	protected:
 		/// GetTokPrecedence - Get the precedence of the pending binary operator token.

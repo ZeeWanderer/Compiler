@@ -38,6 +38,7 @@ namespace slljit
 			Parser m_parser(m_local_context.BinopPrecedence);
 			CodeGen m_codegen;
 			m_parser.set_source(body);
+			m_parser.set_variables(m_layout);
 
 			m_parser.parse();
 

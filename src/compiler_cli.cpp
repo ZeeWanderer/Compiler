@@ -1,5 +1,8 @@
 ﻿// Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+// TODO: implement variable scopes for codegen
+// TODO: ForExprAST implement types
+// 
 // TODO: nothrow error handling
 // TODO: parse funnction arg types
 // TODO: More operators
@@ -122,7 +125,6 @@ int main(int argc, char** argv)
 		return right;
 	}
 )";
-
 	auto begin = std::chrono::steady_clock::now();
 	m_program.compile(source_code, m_layout);
 	auto end = std::chrono::steady_clock::now();

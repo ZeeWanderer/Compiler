@@ -27,7 +27,9 @@ namespace slljit
 		std::unique_ptr<IRBuilder<>> LLVM_Builder;
 
 		std::unique_ptr<Module> LLVM_Module;
+
 		std::map<std::string, AllocaInst*> NamedValues;
+
 		std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
 		std::unique_ptr<legacy::PassManager> LLVM_PM;
 		std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;

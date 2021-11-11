@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 
+#include "Types.h"
 namespace slljit
 {
 	using namespace std;
@@ -16,8 +17,8 @@ namespace slljit
 
 	enum LayoutVarTypes
 	{
-		Kdouble,
-		Kint64
+		Kdouble = doubleTyID,
+		Kint64 = int64TyID
 	};
 
 	struct GlobalDefinition

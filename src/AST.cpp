@@ -3,6 +3,7 @@
 
 #include "Context.h"
 #include "Parser.h"
+#include "Types.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -11,19 +12,8 @@ using namespace std;
 
 namespace slljit
 {
-	llvm::Type* get_llvm_type(BasicTypeID TyID, LocalContext& m_local_context)
-	{
-		switch (TyID)
-		{
-		case doubleTyID:
-			return m_local_context.LLVM_Builder->getDoubleTy();
-		case int64TyID:
-			return m_local_context.LLVM_Builder->getInt64Ty();
-		}
-	}
-
 	// type from, type to -> cast op
-	const map<std::pair<llvm::Type::TypeID, llvm::Type::TypeID>, llvm::Instruction::CastOps> llvm_types_to_cast_op = {{{Type::DoubleTyID, Type::IntegerTyID}, Instruction::FPToSI}, {{Type::IntegerTyID, Type::DoubleTyID}, Instruction::SIToFP}};
+	//const map<std::pair<llvm::Type::TypeID, llvm::Type::TypeID>, llvm::Instruction::CastOps> llvm_types_to_cast_op = {{{Type::DoubleTyID, Type::IntegerTyID}, Instruction::FPToSI}, {{Type::IntegerTyID, Type::DoubleTyID}, Instruction::SIToFP}};
 
 	Value* BinaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
@@ -41,6 +31,7 @@ namespace slljit
 			Value* Val = RHS->codegen(m_context, m_local_context);
 			if (!Val)
 				return nullptr;
+			auto ValTy = RHS->getType();
 
 			// Look up global
 			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(LHSE->getName());
@@ -59,11 +50,12 @@ namespace slljit
 			AllocaInst* Variable = m_local_context.NamedValues[LHSE->getName()];
 			if (!Variable)
 				return LogErrorV("Unknown variable name");
+			auto VariableTy = LHSE->getType();
 
 			// if types differ cast val to variable type
-			if (Variable->getAllocatedType() != Val->getType())
+			if (VariableTy != ValTy)
 			{
-				auto castOP = llvm_types_to_cast_op.at({Val->getType()->getTypeID(), Variable->getAllocatedType()->getTypeID()});
+				auto castOP = cast_op_lookup.at({ValTy, VariableTy});
 				Val         = m_local_context.LLVM_Builder->CreateCast(castOP, Val, Variable->getAllocatedType());
 			}
 
@@ -75,19 +67,26 @@ namespace slljit
 		Value* R = RHS->codegen(m_context, m_local_context);
 		if (!L || !R)
 			return nullptr;
+		auto LTy = LHS->getType();
+		auto RTy = RHS->getType();
 
 		// implict type conversion
 		// if any of the operands is floating type and other is not, convert all of them to floating type
 		// Currently there is single floating type, in case of multiple convert to the widest.
-		if (L->getType() != R->getType())
+		if (LTy != RTy)
 		{
-			if (L->getType()->isIntegerTy())
+			auto implictTy = implict_cast_loockup.at({LTy, RTy});
+			auto new_type  = get_llvm_type(implictTy, m_local_context);
+			if (LTy != implictTy)
 			{
-				L = m_local_context.LLVM_Builder->CreateCast(Instruction::SIToFP, L, m_local_context.LLVM_Builder->getDoubleTy());
+				auto castOP = cast_op_lookup.at({LTy, implictTy});
+				L = m_local_context.LLVM_Builder->CreateCast(castOP, L, new_type);
 			}
-			else
+
+			if (RTy != implictTy)
 			{
-				R = m_local_context.LLVM_Builder->CreateCast(Instruction::SIToFP, R, m_local_context.LLVM_Builder->getDoubleTy());
+				auto castOP = cast_op_lookup.at({RTy, implictTy});
+				R           = m_local_context.LLVM_Builder->CreateCast(castOP, R, new_type);
 			}
 		}
 
@@ -191,7 +190,7 @@ namespace slljit
 
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
-	AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, BasicTypeID VarType, Context& m_context, LocalContext& m_local_context)
+	AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, TypeID VarType, Context& m_context, LocalContext& m_local_context)
 	{
 		auto var_type = get_llvm_type(VarType, m_local_context);
 		IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
@@ -250,9 +249,10 @@ namespace slljit
 	{
 		if (Value* RetVal = Operand->codegen(m_context, m_local_context))
 		{
-			if (RetVal->getType()->isIntegerTy())
+			auto OperandTy = Operand->getType();
+			if (OperandTy != this->type_)
 			{
-				auto castOP = llvm_types_to_cast_op.at({RetVal->getType()->getTypeID(), m_local_context.LLVM_Builder->getDoubleTy()->getTypeID()});
+				auto castOP = cast_op_lookup.at({OperandTy, this->type_});
 				RetVal      = m_local_context.LLVM_Builder->CreateCast(castOP, RetVal, m_local_context.LLVM_Builder->getDoubleTy());
 			}
 			// Finish off the function.
@@ -456,28 +456,29 @@ namespace slljit
 			//  g_var a = 1 in
 			//    g_var a = a in ...   # refers to outer 'a'.
 			Value* InitVal;
+			auto InitVal_type = none;
 			if (Init)
 			{
 				InitVal = Init->codegen(m_context, m_local_context);
 				if (!InitVal)
 					return nullptr;
+
+				InitVal_type = Init->getType();
 			}
 			else
 			{ // If not specified, use 0.0.
 				InitVal = ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0));
+				InitVal_type = doubleTyID;
 			}
 
-			auto value_type = get_llvm_type(VarType, m_local_context);
-
-			auto InitVal_type = InitVal->getType();
-
-			if (InitVal_type != value_type)
+			if (InitVal_type != type_)
 			{
-				auto castOP = llvm_types_to_cast_op.at({InitVal_type->getTypeID(), value_type->getTypeID()});
+				auto value_type = get_llvm_type(type_, m_local_context);
+				auto castOP = cast_op_lookup.at({InitVal_type, this->type_});
 				InitVal     = m_local_context.LLVM_Builder->CreateCast(castOP, InitVal, value_type);
 			}
 
-			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName, VarType, m_context, m_local_context);
+			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName, type_, m_context, m_local_context);
 			retval             = m_local_context.LLVM_Builder->CreateStore(InitVal, Alloca);
 
 			// Remember the old variable binding so that we can restore the binding when
@@ -542,7 +543,7 @@ namespace slljit
 		for (auto& Arg : TheFunction->args())
 		{
 			// Create an alloca for this variable.
-			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), BasicTypeID::doubleTyID, m_context, m_local_context);
+			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, Arg.getName(), TypeID::doubleTyID, m_context, m_local_context);
 
 			// Store the initial value into the alloca.
 			m_local_context.LLVM_Builder->CreateStore(&Arg, Alloca);

@@ -18,8 +18,6 @@ namespace slljit
 			return m_local_context.LLVM_Builder->getInt64Ty();
 		case slljit::functionTyID:
 			break;
-		//case slljit::control:
-		//	break;
 		case slljit::none:
 			break;
 		default:
@@ -37,6 +35,27 @@ namespace slljit
 		{
 			auto lookup = implict_cast_loockup.at({lhs, rhs});
 			return lookup;
+		}
+	}
+	bool isFloatingPointTy(TypeID type_)
+	{
+		switch (type_)
+		{
+		case slljit::doubleTyID:
+			return true;
+		default:
+			return false;
+		}
+	}
+	bool isIntegerTy(TypeID type_)
+	{
+		switch (type_)
+		{
+		case slljit::int64TyID:
+		case slljit::uint64TyID:
+			return true;
+		default:
+			return false;
 		}
 	}
 }; // namespace slljit

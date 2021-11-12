@@ -65,4 +65,8 @@ namespace slljit
 
 	TypeID operator+(TypeID lhs, TypeID rhs);
 
+	bool isFloatingPointTy(TypeID type_);
+
+	bool isIntegerTy(TypeID type_);
+
 }; // namespace slljit

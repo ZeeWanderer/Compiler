@@ -41,6 +41,8 @@ namespace slljit
 		double NumVal;                 // Filled in if tok_number
 		std::string_view source_code;
 
+		size_t source_idx = 0;
+
 		static const set<char> identifier_start_charset;
 		static const set<char> identifier_charset;
 		static const map<string, Token> reserved_identifier_set;

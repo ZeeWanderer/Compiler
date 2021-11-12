@@ -19,7 +19,6 @@ namespace slljit
 
 	inline int Tokenizer::_getchar()
 	{
-		static size_t source_idx = 0;
 		if (source_idx < source_code.size())
 		{
 			return source_code[source_idx++];

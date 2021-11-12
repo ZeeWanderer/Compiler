@@ -159,6 +159,11 @@ namespace slljit
 	
 		Error err = m_context.shllJIT->addModule(std::move(TSM), RT);
 
+		if (err)
+		{
+			// TODO: return compile error
+		}
+
 #if _DEBUG
 		if (err)
 			fprintf(stderr, "; error\n");

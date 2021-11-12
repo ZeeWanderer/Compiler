@@ -2,23 +2,21 @@
 //
 // TODO: implement variable scopes for codegen
 // TODO: ForExprAST implement types
-// 
+//
 // TODO: nothrow error handling
 // TODO: parse funnction arg types
 // TODO: More operators
 // TODO: 1+ char length operators
-// TODO: Branching: if-else,for loop;
-// TODO: 1+ char length operators
-// TODO: Actully use types(Cast, conversion etc.)
-// TODO: convert to OOP in mpsl image.
-// TODO: layout as in mpsl
-// TODO: remove delayed jit
+// TODO: Branching: Broaden if-else, switch statement;
+// TODO: Broaden types
 
 #include "pch.h"
 #include "Tokenizer.h"
 #include "Context.h"
 #include "Layout.h"
 #include "Program.hpp"
+
+#include <taskflow/taskflow.hpp>
 
 using namespace slljit;
 namespace slljit
@@ -125,13 +123,14 @@ int main(int argc, char** argv)
 		return right;
 	}
 )";
+
 	auto begin = std::chrono::steady_clock::now();
 	m_program.compile(source_code, m_layout);
 	auto end = std::chrono::steady_clock::now();
 
-	const auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+	auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 
-	std::cout << "compile_time = " << compile_time.count() << "[ms]" << std::endl;
+	std::cout << "sync 1 compile_time = " << compile_time.count() << "[ms]" << std::endl;
 
 	Data data{10.0, 10.0, 10.0, 15};
 
@@ -142,6 +141,44 @@ int main(int argc, char** argv)
 	const auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
 	std::cout << "run_time = " << run_time.count() << "[ns]" << std::endl;
+
+	return 0; // cut off testing code
+
+	{
+		auto lambda = [&source_code, &m_layout]()
+		{
+			Context m_context;
+			Program<Data> m_program(m_context);
+			m_program.compile(source_code, m_layout);
+		};
+
+		begin = std::chrono::steady_clock::now();
+		for (int idx = 0; idx < 100; idx++)
+		{
+			lambda();
+		}
+		end = std::chrono::steady_clock::now();
+
+		compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+		std::cout << "sync 100 compile_time = " << compile_time.count() << "[ms]" << std::endl;
+
+		tf::Executor executor;
+		tf::Taskflow taskflow;
+
+		for (int idx = 0; idx < 100; idx++)
+		{
+			taskflow.emplace(lambda);
+		}
+
+		begin = std::chrono::steady_clock::now();
+		executor.run(taskflow).wait();
+		end = std::chrono::steady_clock::now();
+
+		compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+		std::cout << "async 100 compile_time = " << compile_time.count() << "[ms]" << std::endl;
+	}
 
 	//	unsigned char* ptr = reinterpret_cast<unsigned char*>(m_program.main_func);
 

@@ -1,6 +1,11 @@
 ﻿#pragma once
-// TODO: remove pch,h
-#include "pch.h"
+
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/IR/LegacyPassManager.h"
+
 #include "JIT.h"
 #include "AST.h"
 

@@ -18,7 +18,8 @@ namespace slljit
 	enum LayoutVarTypes
 	{
 		Kdouble = doubleTyID,
-		Kint64 = int64TyID
+		Kint64 = int64TyID,
+		Kuint64 = uint64TyID
 	};
 
 	struct GlobalDefinition
@@ -30,30 +31,19 @@ namespace slljit
 
 	struct ConstantGlobalDefinition
 	{
-		template <BasicType T>
-		ConstantGlobalDefinition(T value, LayoutVarTypes type)
-		{
-			switch (type)
-			{
-			case slljit::Kdouble:
-				this->valueD = (double)value;
-				break;
-			case slljit::Kint64:
-				this->valueI64 = (int64_t)value;
-				break;
-			default: break;
-			}
-
-			this->type = type;
-		}
-
 		union
 		{
 			double valueD;
-			int64_t valueI64;
+			int64_t valueSI64;
+			uint64_t valueUI64;
 		};
-		
+
 		LayoutVarTypes type;
+
+		template <BasicType T>
+		ConstantGlobalDefinition(T value, LayoutVarTypes type);
+
+		Constant* get_init_val(LocalContext& ctx);
 	};
 
 	class Layout
@@ -69,4 +59,5 @@ namespace slljit
 		void addConsatant(string name, double value, LayoutVarTypes type);
 		void addConsatant(string name, int64_t value, LayoutVarTypes type);
 	};
+
 }; // namespace slljit

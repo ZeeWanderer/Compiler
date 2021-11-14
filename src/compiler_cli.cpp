@@ -77,19 +77,17 @@ std::string hexStr(unsigned char* data, int len)
 
 struct Data
 {
-	double iter;
+	int64_t iter;
 	double start_0;
 	double start_1;
-	int64_t Ni;
 };
 
 int main(int argc, char** argv)
 {
 	Context m_context;
-	Program<Data> m_program(m_context);
+	Program<Data, uint64_t> m_program(m_context);
 	Layout m_layout;
-	m_layout.addMember("N", ::Kdouble, offsetof(Data, iter));
-	m_layout.addMember("Ni", ::Kint64, offsetof(Data, Ni));
+	m_layout.addMember("N", ::Kint64, offsetof(Data, iter));
 	m_layout.addConsatant("v", 5.0, ::Kdouble);
 	m_layout.addConsatant("vi", 14.0, ::Kint64);
 	//	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
@@ -97,23 +95,18 @@ int main(int argc, char** argv)
 	//	m_layout.addConsatant("v", 5, ::Kdouble);
 
 	const std::string source_code = R"(
-	double main()
+	uint64 main()
 	{
-		int64 test = Ni;
-		double left = 0;
-		double right = 1;
-
-		test = right;
-
-		int64 test_1 = test + vi;
-		int64 test_2 = test + test_1 + v;
+		uint64 test = N;
+		uint64 left = 0;
+		uint64 right = 1;
 
 		if(N < 2)
 		{
 			return N;
 		}
 
-		for(double idx = 0; idx < N - 1; idx = idx + 1)
+		for(uint64 idx = 0; idx < N - 1; idx = idx + 1)
 		{
 			double tmp = right + left;
 			left = right;
@@ -132,7 +125,7 @@ int main(int argc, char** argv)
 
 	std::cout << "sync 1 compile_time = " << compile_time.count() << "[ms]" << std::endl;
 
-	Data data{10.0, 10.0, 10.0, 15};
+	Data data{5, 10.0, 10.0};
 
 	begin       = std::chrono::steady_clock::now();
 	auto retval = m_program.run(&data);
@@ -140,6 +133,7 @@ int main(int argc, char** argv)
 
 	const auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
+	std::cout << "retval = " << retval << std::endl;
 	std::cout << "run_time = " << run_time.count() << "[ns]" << std::endl;
 
 	return 0; // cut off testing code
@@ -148,7 +142,7 @@ int main(int argc, char** argv)
 		auto lambda = [&source_code, &m_layout]()
 		{
 			Context m_context;
-			Program<Data> m_program(m_context);
+			Program<Data, uint64_t> m_program(m_context);
 			m_program.compile(source_code, m_layout);
 		};
 

@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "CodeGen.h"
 #include "Layout.h"
+#include "Types.h"
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -20,17 +21,7 @@ namespace slljit
 		// Globals contain pointers to layout members, init with nullptr
 		for (auto& global : m_layout.globals) 
 		{
-			Type* type_;
-			switch (global.type)
-			{
-			case slljit::Kdouble:
-				type_ = Type::getDoubleTy(*m_local_context.LLVM_Context);
-				break;
-			case slljit::Kint64:
-				type_ = Type::getInt64Ty(*m_local_context.LLVM_Context);
-				break;
-			default: break;
-			}
+			Type* type_ = get_llvm_type(TypeID(global.type), m_local_context);
 			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, type_->getPointerTo());
 			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.name);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
@@ -71,20 +62,8 @@ namespace slljit
 		// Insert constant globals
 		for (auto& global : m_layout.constant_globals)
 		{
-			Type* type_;
-			Constant* init_c;
-			switch (global.second.type)
-			{
-			case slljit::Kdouble:
-				type_ = Type::getDoubleTy(*m_local_context.LLVM_Context);
-				init_c = ConstantFP::get(*m_local_context.LLVM_Context, APFloat(global.second.valueD));
-				break;
-			case slljit::Kint64:
-				type_ = Type::getInt64Ty(*m_local_context.LLVM_Context);
-				init_c = ConstantInt::get(*m_local_context.LLVM_Context, APInt(64, global.second.valueI64, true));
-				break;
-			default: break;
-			}
+			Type* type_ = get_llvm_type(TypeID(global.second.type), m_local_context);
+			Constant* init_c = global.second.get_init_val(m_local_context);
 
 			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, type_);
 			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.first);

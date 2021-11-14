@@ -16,7 +16,7 @@ namespace slljit
 {
 	using namespace std;
 
-	template <class T>
+	template <class T, typename R>
 	class Program
 	{
 	public:
@@ -24,7 +24,7 @@ namespace slljit
 		LocalContext m_local_context;
 		Layout m_layout;
 		//	vector<pair<intptr_t, GlobalDefinition>> runtime_globals;
-		double (*main_func)() = nullptr;
+		R (*main_func)() = nullptr;
 		void (*loader__)(T*)  = nullptr;
 
 	public:
@@ -51,10 +51,10 @@ namespace slljit
 			//	auto symbol        = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
 			auto symbol        = ExitOnError()(m_context.shllJIT->lookup("main", m_local_context.JD));
 			auto loader_symbol = ExitOnError()(m_context.shllJIT->lookup("__layout_loader_", m_local_context.JD));
-			main_func          = (double (*)())(intptr_t)symbol.getAddress();
+			main_func          = (R (*)())(intptr_t)symbol.getAddress();
 			loader__           = (void (*)(T*))(intptr_t)loader_symbol.getAddress();
 		}
-		double run(T* data)
+		R run(T* data)
 		{
 			loader__(data);
 			auto retval = main_func();

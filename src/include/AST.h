@@ -64,7 +64,7 @@ namespace slljit
 	{
 	public:
 		NoOpAST()
-		    : ExprAST(std::move(none))
+		    : ExprAST(none)
 		{
 		}
 
@@ -84,7 +84,7 @@ namespace slljit
 
 	public:
 		NumberExprAST(double Val)
-		    : ExprAST(std::move(doubleTyID)), Val(Val)
+		    : ExprAST(doubleTyID), Val(Val)
 		{
 		}
 
@@ -95,9 +95,10 @@ namespace slljit
 	class VariableExprAST : public ExprAST
 	{
 		std::string Name;
+
 	public:
 		VariableExprAST(const std::string& Name, TypeID type_)
-		    : Name(Name), ExprAST(std::move(type_))
+		    : Name(Name), ExprAST(type_)
 		{
 		}
 
@@ -129,10 +130,9 @@ namespace slljit
 		std::unique_ptr<ExprAST> Operand;
 
 	public:
-		ReturnExprAST(std::unique_ptr<ExprAST> Operand)
-		    : Operand(std::move(Operand))
+		ReturnExprAST(std::unique_ptr<ExprAST> Operand, TypeID type_)
+		    : ExprAST(type_), Operand(std::move(Operand))
 		{
-			type_ = doubleTyID; //this->Operand->getType();
 		}
 
 		virtual bool bIsTerminator() override
@@ -171,7 +171,7 @@ namespace slljit
 		CallExprAST(const std::string& Callee, std::vector<std::unique_ptr<ExprAST>> Args)
 		    : Callee(Callee), Args(std::move(Args))
 		{
-			type_ = doubleTyID;
+			type_ = doubleTyID; // TODO: store function signatures in scope to know call ret type
 		}
 
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
@@ -258,16 +258,17 @@ namespace slljit
 	{
 		std::string Name;
 		std::vector<std::string> Args;
+		std::vector<TypeID> ArgTypes;
+		TypeID ret_type_;
 		bool IsOperator;
 		unsigned Precedence; // Precedence if a binary op.
 
 	public:
-		PrototypeAST(const std::string& Name, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
-		    : Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec), ExprAST(std::move(none))
+		PrototypeAST(TypeID ret_type_, const std::string& Name, std::vector<TypeID> ArgTypes, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
+		    : ret_type_(ret_type_), ArgTypes(std::move(ArgTypes)), Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec), ExprAST(std::move(none))
 		{
 		}
 
-		// Cast to Function*
 		// Cast to Function*
 		Value* codegen(Context& m_context, LocalContext& m_local_context);
 		const std::string& getName() const
@@ -301,14 +302,14 @@ namespace slljit
 	{
 		PrototypeAST& Proto;
 		ExprList Body;
+		TypeID ret_type_;
 
 	public:
-		FunctionAST(PrototypeAST& Proto, ExprList Body)
-		    : Proto(Proto), Body(std::move(Body))
+		FunctionAST(PrototypeAST& Proto, ExprList Body, TypeID ret_type_)
+		    : ExprAST(functionTyID), Proto(Proto), Body(std::move(Body)), ret_type_(ret_type_)
 		{
 		}
 
-		// Cast to Function*
 		// Cast to Function*
 		Value* codegen(Context& m_context, LocalContext& m_local_context);
 

@@ -12,9 +12,6 @@ using namespace std;
 
 namespace slljit
 {
-
-
-
 	/// GetTokPrecedence - Get the precedence of the pending binary operator token.
 
 	int Parser::getNextToken()
@@ -147,7 +144,7 @@ namespace slljit
 		{
 			//	getNextToken(); // eat return.
 			auto expr = ParseExpression();
-			return std::make_unique<ReturnExprAST>(std::move(expr));
+			return std::make_unique<ReturnExprAST>(std::move(expr), this->function_ret_in_scope);
 		}
 
 		if (CurTok != '(') // Simple variable ref.
@@ -448,6 +445,9 @@ namespace slljit
 		unsigned Kind             = 0; // 0 = identifier, 1 = unary, 2 = binary.
 		unsigned BinaryPrecedence = 30;
 
+		const auto FnRetTypeStr = m_tokenizer.get_type_identifier();
+		const auto FnRetTypeID  = basic_types_id_map.at(FnRetTypeStr); // TODO: error check
+
 		switch (CurTok)
 		{
 		default: return LogErrorP("Expected function name in prototype");
@@ -462,8 +462,13 @@ namespace slljit
 			return LogErrorP("Expected '(' in prototype");
 
 		std::vector<std::string> ArgNames;
+		std::vector<TypeID> ArgTypes;
 		while (getNextToken() == tok_type)
 		{
+			const auto ArgTypeStr = m_tokenizer.get_type_identifier();
+			const auto ArgTypeID = basic_types_id_map.at(ArgTypeStr);
+			ArgTypes.emplace_back(ArgTypeID);
+
 			if (getNextToken() == tok_identifier)
 				ArgNames.push_back(m_tokenizer.get_identifier());
 			else
@@ -484,7 +489,7 @@ namespace slljit
 		if (Kind && ArgNames.size() != Kind)
 			return LogErrorP("Invalid number of operands for operator");
 
-		return std::make_unique<PrototypeAST>(FnName, ArgNames, Kind != 0, BinaryPrecedence);
+		return std::make_unique<PrototypeAST>(FnRetTypeID, FnName, ArgTypes, ArgNames , Kind != 0, BinaryPrecedence);
 	}
 
 	/// definition ::= 'def' prototype expression
@@ -492,6 +497,11 @@ namespace slljit
 	std::unique_ptr<FunctionAST> Parser::ParseTopLevelTypedExpression()
 	{
 		push_scope();
+
+		const auto TypeStr = m_tokenizer.get_type_identifier();
+		const auto TypeID  = basic_types_id_map.at(TypeStr); // TODO: error check
+
+		this->function_ret_in_scope = TypeID;
 
 		getNextToken(); // eat type.
 
@@ -506,7 +516,7 @@ namespace slljit
 			{
 				auto& P = *Proto;
 				PrototypeAST_list.emplace_back(std::move(Proto));
-				return std::make_unique<FunctionAST>(P, std::move(E));
+				return std::make_unique<FunctionAST>(P, std::move(E), TypeID);
 			}
 			return LogErrorF("Empty function");
 		}
@@ -515,6 +525,7 @@ namespace slljit
 			return LogErrorF("Expected identifier after type");
 		}
 
+		this->function_ret_in_scope = none;
 		pop_scope();
 	}
 

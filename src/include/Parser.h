@@ -38,6 +38,7 @@ namespace slljit
 		std::list<std::unique_ptr<PrototypeAST>> PrototypeAST_list;
 
 		vector<map<string, TypeID>> scope_list;
+		TypeID function_ret_in_scope = none; 
 
 		Tokenizer m_tokenizer;
 

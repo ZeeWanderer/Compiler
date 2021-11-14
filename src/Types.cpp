@@ -16,6 +16,8 @@ namespace slljit
 			return m_local_context.LLVM_Builder->getInt64Ty();
 		case slljit::uint64TyID:
 			return m_local_context.LLVM_Builder->getInt64Ty();
+		case slljit::boolTyID:
+			return m_local_context.LLVM_Builder->getInt1Ty();
 		case slljit::functionTyID:
 			break;
 		case slljit::none:
@@ -33,7 +35,7 @@ namespace slljit
 			return lhs;
 		else
 		{
-			auto lookup = implict_cast_loockup.at({lhs, rhs});
+			auto lookup = implict_cast_lookup.at({lhs, rhs});
 			return lookup;
 		}
 	}
@@ -53,6 +55,18 @@ namespace slljit
 		{
 		case slljit::int64TyID:
 		case slljit::uint64TyID:
+		case slljit::boolTyID:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	bool isSigned(TypeID type_)
+	{
+		switch (type_)
+		{
+		case slljit::int64TyID:
 			return true;
 		default:
 			return false;

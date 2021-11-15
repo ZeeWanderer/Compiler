@@ -488,6 +488,8 @@ namespace slljit
 		unsigned Kind             = 0; // 0 = identifier, 1 = unary, 2 = binary.
 		unsigned BinaryPrecedence = 30;
 
+		getNextToken(); // eat type.
+
 		const auto FnRetTypeStr = m_tokenizer.get_type_identifier();
 		const auto FnRetTypeID  = basic_types_id_map.at(FnRetTypeStr); // TODO: error check
 
@@ -547,14 +549,7 @@ namespace slljit
 	{
 		push_scope();
 
-		const auto TypeStr = m_tokenizer.get_type_identifier();
-		const auto TypeID  = basic_types_id_map.at(TypeStr); // TODO: error check
-
-		this->function_ret_in_scope = TypeID;
-
-		getNextToken(); // eat type.
-
-		if (CurTok == tok_identifier)
+		if (CurTok == tok_type)
 		{
 			auto Proto = ParsePrototype();
 			if (!Proto)
@@ -573,7 +568,7 @@ namespace slljit
 		}
 		else
 		{
-			return LogErrorF("Expected identifier after type");
+			return LogErrorF("Expected type");
 		}
 
 		pop_scope();

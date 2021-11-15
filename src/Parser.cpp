@@ -1,5 +1,4 @@
-﻿#include "include\Parser.h"
-#include "pch.h"
+﻿#include "pch.h"
 #include "Parser.h"
 #include "AST.h"
 #include "Types.h"
@@ -80,6 +79,16 @@ namespace slljit
 		current_scope[name] = type;
 	}
 
+	void Parser::set_current_function_scope(PrototypeAST* p)
+	{
+		this->current_function_proto = p;
+	}
+
+	const PrototypeAST* Parser::get_current_function_scope()
+	{
+		return this->current_function_proto;
+	}
+
 	inline TypeID Parser::find_var_in_scope(string name)
 	{
 		for (auto it = scope_list.rbegin(); it < scope_list.rend(); it++)
@@ -109,9 +118,23 @@ namespace slljit
 
 	std::unique_ptr<ExprAST> Parser::ParseNumberExpr()
 	{
-		auto Result = std::make_unique<NumberExprAST>(m_tokenizer.get_double_val());
-		getNextToken(); // consume the number
-		return std::move(Result);
+		const auto numStr = m_tokenizer.get_number_string();
+		if (numStr.find_first_of(".", 0) != string::npos)
+		{
+			double value;
+			std::from_chars(numStr.c_str(), numStr.c_str() + numStr.size(), value);
+			auto Result = std::make_unique<NumberExprAST>(value);
+			getNextToken(); // consume the number
+			return std::move(Result);
+		}
+		else
+		{
+			int64_t value;
+			std::from_chars(numStr.c_str(), numStr.c_str() + numStr.size(), value);
+			auto Result = std::make_unique<NumberExprAST>(value);
+			getNextToken(); // consume the number
+			return std::move(Result);
+		}
 	}
 
 	/// parenexpr ::= '(' expression ')'
@@ -143,8 +166,9 @@ namespace slljit
 		if (IdName == "return")
 		{
 			//	getNextToken(); // eat return.
-			auto expr = ParseExpression();
-			return std::make_unique<ReturnExprAST>(std::move(expr), this->function_ret_in_scope);
+			auto expr          = ParseExpression();
+			const auto f_scope = get_current_function_scope();
+			return std::make_unique<ReturnExprAST>(std::move(expr), f_scope->getRetType());
 		}
 
 		if (CurTok != '(') // Simple variable ref.
@@ -152,17 +176,20 @@ namespace slljit
 			auto type_ = find_var_in_scope(IdName);
 			return std::make_unique<VariableExprAST>(IdName, type_);
 		}
-			
 
 		// Call.
 		getNextToken(); // eat (
 		std::vector<std::unique_ptr<ExprAST>> Args;
+		//std::vector<TypeID> ArgTypes;
 		if (CurTok != ')')
 		{
 			while (true)
 			{
 				if (auto Arg = ParseExpression())
+				{
+					//ArgTypes.push_back(Arg->getType());
 					Args.push_back(std::move(Arg));
+				}
 				else
 					return nullptr;
 
@@ -178,7 +205,23 @@ namespace slljit
 		// Eat the ')'.
 		getNextToken();
 
-		return std::make_unique<CallExprAST>(IdName, std::move(Args));
+		TypeID ret_type_     = none;
+		bool prototype_found = false;
+		std::vector<TypeID> ArgTypes;
+		for (auto const& proto : PrototypeAST_list)
+		{
+			if (proto->match(IdName /*, ArgTypes*/))
+			{
+				ret_type_       = proto->getRetType();
+				ArgTypes        = proto->getArgTypes();
+				prototype_found = true;
+				break;
+			}
+		}
+		if (!prototype_found)
+			return LogError("Definition of callable not found");
+
+		return std::make_unique<CallExprAST>(ret_type_, IdName, std::move(ArgTypes), std::move(Args));
 	}
 
 	/// ifexpr ::= 'if' expression 'then' expression 'else' expression
@@ -273,7 +316,7 @@ namespace slljit
 	{
 		auto VarTypeStr = m_tokenizer.get_type_identifier();
 		auto VarTypeID  = basic_types_id_map.at(VarTypeStr); // TODO: error check
-		getNextToken(); // eat type.
+		getNextToken();                                      // eat type.
 
 		std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
 
@@ -466,15 +509,21 @@ namespace slljit
 		while (getNextToken() == tok_type)
 		{
 			const auto ArgTypeStr = m_tokenizer.get_type_identifier();
-			const auto ArgTypeID = basic_types_id_map.at(ArgTypeStr);
+			const auto ArgTypeID  = basic_types_id_map.at(ArgTypeStr);
 			ArgTypes.emplace_back(ArgTypeID);
 
 			if (getNextToken() == tok_identifier)
-				ArgNames.push_back(m_tokenizer.get_identifier());
+			{
+				const auto arg_name = m_tokenizer.get_identifier();
+				push_var_into_scope(arg_name, ArgTypeID);
+				ArgNames.push_back(arg_name);
+			}
 			else
 				return LogErrorP("Expected identifier after type in prototype");
+
 			if (getNextToken() != ',')
 				break;
+
 		}
 		if (CurTok != ')')
 			return LogErrorP("Expected ')' in prototype");
@@ -489,7 +538,7 @@ namespace slljit
 		if (Kind && ArgNames.size() != Kind)
 			return LogErrorP("Invalid number of operands for operator");
 
-		return std::make_unique<PrototypeAST>(FnRetTypeID, FnName, ArgTypes, ArgNames , Kind != 0, BinaryPrecedence);
+		return std::make_unique<PrototypeAST>(FnRetTypeID, FnName, ArgTypes, ArgNames, Kind != 0, BinaryPrecedence);
 	}
 
 	/// definition ::= 'def' prototype expression
@@ -511,12 +560,14 @@ namespace slljit
 			if (!Proto)
 				return nullptr;
 
+			set_current_function_scope(Proto.get());
 			auto E = ParseExpressionList();
 			if (!E.empty())
 			{
 				auto& P = *Proto;
+
 				PrototypeAST_list.emplace_back(std::move(Proto));
-				return std::make_unique<FunctionAST>(P, std::move(E), TypeID);
+				return std::make_unique<FunctionAST>(P, std::move(E));
 			}
 			return LogErrorF("Empty function");
 		}
@@ -525,7 +576,6 @@ namespace slljit
 			return LogErrorF("Expected identifier after type");
 		}
 
-		this->function_ret_in_scope = none;
 		pop_scope();
 	}
 

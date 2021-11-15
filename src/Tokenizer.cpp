@@ -93,7 +93,8 @@ namespace slljit
 			} while (isdigit(LastChar) || LastChar == '.');
 
 			//	NumVal = strtod(NumStr.c_str(), nullptr);
-			std::from_chars(NumStr.c_str(), NumStr.c_str() + NumStr.size(), NumVal);
+			NumberStr = NumStr;
+			//std::from_chars(NumStr.c_str(), NumStr.c_str() + NumStr.size(), NumVal);
 			return tok_number;
 		}
 
@@ -128,8 +129,8 @@ namespace slljit
 		return TypeIdentifierStr;
 	}
 
-	double Tokenizer::get_double_val()
+	std::string Tokenizer::get_number_string()
 	{
-		return NumVal;
+		return NumberStr;
 	}
 }; // namespace slljit

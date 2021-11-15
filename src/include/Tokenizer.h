@@ -38,6 +38,8 @@ namespace slljit
 	protected:
 		std::string IdentifierStr;     // Filled in if tok_identifier
 		std::string TypeIdentifierStr; // Filled in if tok_type
+		std::string NumberStr;         // Filled in if tok_number
+
 		double NumVal;                 // Filled in if tok_number
 		std::string_view source_code;
 
@@ -71,6 +73,6 @@ namespace slljit
 
 		std::string get_type_identifier();
 
-		double get_double_val();
+		std::string get_number_string();
 	};
 }; // namespace slljit

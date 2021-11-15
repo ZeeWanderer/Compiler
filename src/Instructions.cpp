@@ -45,7 +45,7 @@ namespace slljit
 		return ctx.LLVM_Builder->CreateCmp(llvm_pred, lhs, rhs, Name);
 	}
 
-	Value* CreateAdd(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
+	Value* CreateAdd(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
 		if (isFloatingPointTy(type_))
 		{
@@ -61,7 +61,7 @@ namespace slljit
 		}
 	}
 
-	Value* CreateSub(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
+	Value* CreateSub(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
 		if (isFloatingPointTy(type_))
 		{
@@ -77,7 +77,7 @@ namespace slljit
 		}
 	}
 
-	Value* CreateMul(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
+	Value* CreateMul(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
 		if (isFloatingPointTy(type_))
 		{
@@ -93,7 +93,7 @@ namespace slljit
 		}
 	}
 
-	Value* CreateDiv(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
+	Value* CreateDiv(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
 		if (isFloatingPointTy(type_))
 		{

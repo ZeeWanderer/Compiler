@@ -31,11 +31,16 @@ namespace slljit
 		ExprAST() = default;
 
 		ExprAST(TypeID type_)
-		    : type_(std::move(type_)){};
+		    : type_(type_){};
 
-		virtual TypeID getType()
+		virtual TypeID getType() const
 		{
 			return type_;
+		}
+
+		virtual TypeID getRetType() const
+		{
+			return none;
 		}
 
 		virtual ~ExprAST() = default;
@@ -80,11 +85,21 @@ namespace slljit
 	/// NumberExprAST - Expression class for numeric literals like "1.0".
 	class NumberExprAST : public ExprAST
 	{
-		double Val;
+		union
+		{
+			double ValD;
+			int64_t ValSI64;
+		};
+		
 
 	public:
 		NumberExprAST(double Val)
-		    : ExprAST(doubleTyID), Val(Val)
+		    : ExprAST(doubleTyID), ValD(Val)
+		{
+		}
+
+		NumberExprAST(int64_t Val)
+		    : ExprAST(int64TyID), ValSI64(Val)
 		{
 		}
 
@@ -166,12 +181,12 @@ namespace slljit
 	{
 		std::string Callee;
 		std::vector<std::unique_ptr<ExprAST>> Args;
+		std::vector<TypeID> ArgTypes; // defined in prototype
 
 	public:
-		CallExprAST(const std::string& Callee, std::vector<std::unique_ptr<ExprAST>> Args)
-		    : Callee(Callee), Args(std::move(Args))
+		CallExprAST(TypeID ret_type_, const std::string& Callee, std::vector<TypeID> ArgTypes, std::vector<std::unique_ptr<ExprAST>> Args)
+		    : ExprAST(ret_type_), Callee(Callee), ArgTypes(std::move(ArgTypes)), Args(std::move(Args))
 		{
-			type_ = doubleTyID; // TODO: store function signatures in scope to know call ret type
 		}
 
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
@@ -256,21 +271,37 @@ namespace slljit
 	/// of arguments the function takes), as well as if it is an operator.
 	class PrototypeAST : public ExprAST
 	{
-		std::string Name;
-		std::vector<std::string> Args;
-		std::vector<TypeID> ArgTypes;
-		TypeID ret_type_;
-		bool IsOperator;
-		unsigned Precedence; // Precedence if a binary op.
+		const std::string Name;
+		const std::vector<std::string> Args;
+		const std::vector<TypeID> ArgTypes;
+		const TypeID ret_type_;
+		const bool IsOperator;
+		const unsigned Precedence; // Precedence if a binary op.
 
 	public:
 		PrototypeAST(TypeID ret_type_, const std::string& Name, std::vector<TypeID> ArgTypes, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
-		    : ret_type_(ret_type_), ArgTypes(std::move(ArgTypes)), Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec), ExprAST(std::move(none))
+		    : ExprAST(functionTyID), ret_type_(ret_type_), ArgTypes(std::move(ArgTypes)), Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec) 
 		{
 		}
 
 		// Cast to Function*
-		Value* codegen(Context& m_context, LocalContext& m_local_context);
+		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+
+		TypeID getRetType() const override
+		{
+			return this->ret_type_;
+		}
+
+		std::vector<TypeID> getArgTypes() const
+		{
+			return ArgTypes;
+		}
+
+		bool match(string name/*, std::vector<TypeID> ArgTypes*/)
+		{
+			return name == Name /*&& ArgTypes == this->ArgTypes*/;
+		}
+
 		const std::string& getName() const
 		{
 			return Name;
@@ -302,16 +333,20 @@ namespace slljit
 	{
 		PrototypeAST& Proto;
 		ExprList Body;
-		TypeID ret_type_;
 
 	public:
-		FunctionAST(PrototypeAST& Proto, ExprList Body, TypeID ret_type_)
-		    : ExprAST(functionTyID), Proto(Proto), Body(std::move(Body)), ret_type_(ret_type_)
+		FunctionAST(PrototypeAST& Proto, ExprList Body)
+		    : ExprAST(functionTyID), Proto(Proto), Body(std::move(Body))
 		{
 		}
 
 		// Cast to Function*
-		Value* codegen(Context& m_context, LocalContext& m_local_context);
+		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+
+		TypeID getRetType() const override
+		{
+			return Proto.getRetType();
+		}
 
 		const std::string& getName() const;
 	};

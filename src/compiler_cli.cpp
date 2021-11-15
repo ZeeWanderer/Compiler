@@ -95,11 +95,21 @@ int main(int argc, char** argv)
 	//	m_layout.addConsatant("v", 5, ::Kdouble);
 
 	const std::string source_code = R"(
+
+	extern double printd(double X);
+
+	uint64 test(uint64 x)
+	{
+		return x+1;
+	}
+
 	uint64 main()
 	{
 		uint64 test = N;
 		uint64 left = 0;
-		uint64 right = 1;
+		uint64 right = test(left);
+
+		printd(right);
 
 		if(N < 2)
 		{
@@ -108,7 +118,7 @@ int main(int argc, char** argv)
 
 		for(uint64 idx = 0; idx < N - 1; idx = idx + 1)
 		{
-			double tmp = right + left;
+			uint64 tmp = right + left;
 			left = right;
 			right = tmp;
 		}

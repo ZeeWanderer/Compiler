@@ -169,7 +169,15 @@ namespace slljit
 
 	Value* NumberExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
-		return ConstantFP::get(*m_local_context.LLVM_Context, APFloat(Val));
+		if (isIntegerTy(type_))
+		{
+			const auto llvm_type = get_llvm_type(type_, m_local_context);
+			return ConstantInt::get(llvm_type, APInt(llvm_type->getIntegerBitWidth(), ValSI64, isSigned(type_)));
+		}
+		else
+		{
+			return ConstantFP::get(*m_local_context.LLVM_Context, APFloat(ValD));
+		}
 	}
 
 	Value* VariableExprAST::codegen(Context& m_context, LocalContext& m_local_context)
@@ -236,11 +244,13 @@ namespace slljit
 			return LogErrorV("Incorrect # arguments passed");
 
 		std::vector<Value*> ArgsV;
-		for (unsigned i = 0, e = Args.size(); i != e; ++i)
+		for (const auto& [arg_, arg_type_expected] : zip(Args, ArgTypes))
 		{
-			ArgsV.push_back(Args[i]->codegen(m_context, m_local_context));
-			if (!ArgsV.back())
+			auto val_ = arg_->codegen(m_context, m_local_context);
+			if (!val_)
 				return nullptr;
+			CreateExplictCast(val_, arg_->getType(), arg_type_expected, m_local_context);
+			ArgsV.push_back(val_);
 		}
 
 		return m_local_context.LLVM_Builder->CreateCall(CalleeF, ArgsV, "calltmp");

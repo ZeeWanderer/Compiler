@@ -37,8 +37,11 @@ namespace slljit
 		std::list<std::unique_ptr<FunctionAST>> FunctionAST_list;
 		std::list<std::unique_ptr<PrototypeAST>> PrototypeAST_list;
 
+		std::map<std::string, PrototypeAST&> function_proto_table;
+
+		PrototypeAST* current_function_proto = nullptr;
+
 		vector<map<string, TypeID>> scope_list;
-		TypeID function_ret_in_scope = none; 
 
 		Tokenizer m_tokenizer;
 
@@ -70,6 +73,10 @@ namespace slljit
 		void push_var_into_scope(string name, TypeID type);
 
 		TypeID find_var_in_scope(string name);
+
+		void set_current_function_scope(PrototypeAST* p);
+
+		const PrototypeAST* get_current_function_scope();
 
 	protected:
 		/// GetTokPrecedence - Get the precedence of the pending binary operator token.

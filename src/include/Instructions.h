@@ -58,15 +58,15 @@ namespace slljit
 	Value* CtreateCMP(CmpPredicate pred, Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
 	// Requires both operands to be of the same type
-	Value* CreateAdd(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
+	Value* CreateAdd(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
 	// Requires both operands to be of the same type
-	Value* CreateSub(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
+	Value* CreateSub(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
 	// Requires both operands to be of the same type
-	Value* CreateMul(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
+	Value* CreateMul(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
 	// Requires both operands to be of the same type
-	Value* CreateDiv(Value*& lhs, Value*& rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
+	Value* CreateDiv(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
 }; // namespace slljit

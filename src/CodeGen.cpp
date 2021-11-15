@@ -5,13 +5,13 @@
 
 #include "llvm/Support/raw_ostream.h"
 
-using namespace slljit;
-using namespace llvm;
-using namespace llvm::orc;
-using namespace std;
-
 namespace slljit
 {
+	using namespace slljit;
+	using namespace llvm;
+	using namespace llvm::orc;
+	using namespace std;
+
 	void CodeGen::compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout)
 	{
 		std::vector<Type*> StructMembers; // layout structure
@@ -19,7 +19,7 @@ namespace slljit
 
 		// Insert variable globals
 		// Globals contain pointers to layout members, init with nullptr
-		for (auto& global : m_layout.globals) 
+		for (auto& global : m_layout.globals)
 		{
 			Type* type_ = get_llvm_type(TypeID(global.type), m_local_context);
 			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, type_->getPointerTo());
@@ -62,7 +62,7 @@ namespace slljit
 		// Insert constant globals
 		for (auto& global : m_layout.constant_globals)
 		{
-			Type* type_ = get_llvm_type(TypeID(global.second.type), m_local_context);
+			Type* type_      = get_llvm_type(TypeID(global.second.type), m_local_context);
 			Constant* init_c = global.second.get_init_val(m_local_context);
 
 			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, type_);
@@ -135,7 +135,6 @@ namespace slljit
 
 		auto TSM = ThreadSafeModule(std::move(m_local_context.LLVM_Module), std::move(m_local_context.LLVM_Context));
 
-	
 		Error err = m_context.shllJIT->addModule(std::move(TSM), RT);
 
 		if (err)

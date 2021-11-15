@@ -1,13 +1,13 @@
 ﻿#include "pch.h"
 #include "Context.h"
 
-using namespace llvm;
-using namespace orc;
-using namespace slljit;
-using namespace std;
-
 namespace slljit
 {
+	using namespace llvm;
+	using namespace orc;
+	using namespace slljit;
+	using namespace std;
+
 	void init__()
 	{
 		static bool b_once                             = true;

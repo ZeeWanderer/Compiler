@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 		return x+1;
 	}
 
-    uint64 main()
+	uint64 main()
 	{
 		uint64 test = N;
 		uint64 left = 0;

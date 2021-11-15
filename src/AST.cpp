@@ -6,14 +6,12 @@
 #include "Context.h"
 #include "Parser.h"
 
-
-using namespace llvm;
-using namespace llvm::orc;
-using namespace slljit;
-using namespace std;
-
 namespace slljit
 {
+	using namespace llvm;
+	using namespace llvm::orc;
+	using namespace slljit;
+	using namespace std;
 	// type from, type to -> cast op
 	//const map<std::pair<llvm::Type::TypeID, llvm::Type::TypeID>, llvm::Instruction::CastOps> llvm_types_to_cast_op = {{{Type::DoubleTyID, Type::IntegerTyID}, Instruction::FPToSI}, {{Type::IntegerTyID, Type::DoubleTyID}, Instruction::SIToFP}};
 
@@ -81,11 +79,11 @@ namespace slljit
 		case '*': return CreateMul(L, R, implType, m_local_context, "multmp");
 		case '/': return CreateDiv(L, R, implType, m_local_context, "divtmp");
 		case '<':
-			L = CtreateCMP(less_then, L, R, implType, m_local_context, "cmptmp");
+			L           = CtreateCMP(less_then, L, R, implType, m_local_context, "cmptmp");
 			this->type_ = boolTyID;
 			return L;
 		case '>':
-			L = CtreateCMP(greater_than, L, R, implType, m_local_context, "cmptmp");
+			L           = CtreateCMP(greater_than, L, R, implType, m_local_context, "cmptmp");
 			this->type_ = boolTyID;
 			return L;
 		default: break;
@@ -417,7 +415,7 @@ namespace slljit
 			}
 			else
 			{ // If not specified, use 0.0.
-				InitVal = ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0));
+				InitVal      = ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0));
 				InitVal_type = doubleTyID;
 			}
 
@@ -462,7 +460,7 @@ namespace slljit
 			Doubles.emplace_back(llvm_arg_type);
 		}
 
-		const auto FnRetTyID = this->ret_type_;
+		const auto FnRetTyID     = this->ret_type_;
 		const auto llvm_ret_type = get_llvm_type(FnRetTyID, m_local_context);
 		FunctionType* FT         = FunctionType::get(llvm_ret_type, Doubles, false);
 
@@ -477,7 +475,7 @@ namespace slljit
 
 		return F;
 	}
-	
+
 	TypeID PrototypeAST::getRetType() const
 	{
 		return this->ret_type_;

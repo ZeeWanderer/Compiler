@@ -41,15 +41,15 @@ namespace slljit
 		std::string TypeIdentifierStr; // Filled in if tok_type
 		std::string NumberStr;         // Filled in if tok_number
 
-		double NumVal;                 // Filled in if tok_number
+		double NumVal; // Filled in if tok_number
 		std::string_view source_code;
 
 		size_t source_idx = 0;
 
-		size_t line_count = 1;
+		size_t line_count      = 1;
 		size_t line_char_count = 0;
 
-		pair<size_t, size_t> tok_location = {-1,-1};
+		pair<size_t, size_t> tok_location = {-1, -1};
 
 		static const set<char> identifier_start_charset;
 		static const set<char> identifier_charset;

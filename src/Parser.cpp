@@ -5,13 +5,13 @@
 #include "Layout.h"
 #include "Error.h"
 
-using namespace llvm;
-using namespace llvm::orc;
-using namespace slljit;
-using namespace std;
-
 namespace slljit
 {
+	using namespace llvm;
+	using namespace llvm::orc;
+	using namespace slljit;
+	using namespace std;
+
 	/// GetTokPrecedence - Get the precedence of the pending binary operator token.
 
 	int Parser::getNextToken()
@@ -367,7 +367,6 @@ namespace slljit
 			}
 
 			push_var_into_scope(Name, VarTypeID);
-			
 
 			// End of g_var list, exit loop.
 			if (CurTok != ',')

@@ -12,7 +12,7 @@ namespace slljit
 		static char ID;
 
 		ParserError(const Twine& S)
-		    : Msg(S.str()), location(-1,-1)
+		    : Msg(S.str()), location(-1, -1)
 		{
 			EC = std::make_error_code(std::errc::interrupted);
 		}
@@ -33,7 +33,6 @@ namespace slljit
 			{
 				OS << "(" << location.first << "," << location.second << "): error: " << Msg;
 			}
-			
 		}
 
 		std::error_code convertToErrorCode() const override

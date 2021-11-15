@@ -11,14 +11,13 @@ namespace slljit
 {
 	using namespace std;
 
-	
 	template <typename T>
 	concept BasicType = std::is_integral<T>::value || std::is_floating_point<T>::value;
 
 	enum LayoutVarTypes
 	{
 		Kdouble = doubleTyID,
-		Kint64 = int64TyID,
+		Kint64  = int64TyID,
 		Kuint64 = uint64TyID
 	};
 

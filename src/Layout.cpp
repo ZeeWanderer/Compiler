@@ -2,13 +2,13 @@
 #include "Layout.h"
 #include "Context.h"
 
-using namespace slljit;
-using namespace llvm;
-using namespace llvm::orc;
-using namespace std;
-
 namespace slljit
 {
+	using namespace slljit;
+	using namespace llvm;
+	using namespace llvm::orc;
+	using namespace std;
+
 	void Layout::addMember(string name, LayoutVarTypes type, size_t offset)
 	{
 		globals.emplace_back(GlobalDefinition{name, type, offset});

@@ -6,7 +6,6 @@
 #include <map>
 #include <set>
 
-
 #include "Error.h"
 #include "Tokenizer.h"
 #include "Parser.h"
@@ -26,8 +25,9 @@ namespace slljit
 		LocalContext m_local_context;
 		Layout m_layout;
 		//	vector<pair<intptr_t, GlobalDefinition>> runtime_globals;
-		R (*main_func)() = nullptr;
-		void (*loader__)(T*)  = nullptr;
+		R (*main_func)
+		(void)               = nullptr;
+		void (*loader__)(T*) = nullptr;
 
 	public:
 		Program(Context& m_context)
@@ -53,7 +53,7 @@ namespace slljit
 
 			//	auto loader_symbol = m_context.shllJIT->findSymbol("__layout_loader_", m_local_context.module_key);
 			//	auto symbol        = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
-			auto symbol        = m_context.shllJIT->lookup("main", m_local_context.JD);
+			auto symbol = m_context.shllJIT->lookup("main", m_local_context.JD);
 			if (!symbol)
 				return symbol.takeError();
 
@@ -61,8 +61,8 @@ namespace slljit
 			if (!loader_symbol)
 				return loader_symbol.takeError();
 
-			main_func          = (R (*)())(intptr_t)symbol->getAddress();
-			loader__           = (void (*)(T*))(intptr_t)loader_symbol->getAddress();
+			main_func = (R(*)())(intptr_t)symbol->getAddress();
+			loader__  = (void (*)(T*))(intptr_t)loader_symbol->getAddress();
 
 			return Error::success();
 		}

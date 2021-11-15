@@ -2,13 +2,13 @@
 #include "Tokenizer.h"
 #include "Types.h"
 
-using namespace llvm;
-using namespace llvm::orc;
-using namespace slljit;
-using namespace std;
-
 namespace slljit
 {
+	using namespace llvm;
+	using namespace llvm::orc;
+	using namespace slljit;
+	using namespace std;
+
 	const set<char> Tokenizer::identifier_start_charset = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C',
 	    'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_'};
 
@@ -140,7 +140,7 @@ namespace slljit
 		// Otherwise, just return the character as its ascii value.
 		int ThisChar = LastChar;
 		set_lok_location();
-		LastChar     = _getchar();
+		LastChar = _getchar();
 		return ThisChar;
 	}
 

@@ -291,6 +291,8 @@ namespace slljit
 
 		std::vector<TypeID> getArgTypes() const;
 
+		bool isMain() const;
+
 		bool match(string name /*, std::vector<TypeID> ArgTypes*/) const;
 
 		const std::string& getName() const;
@@ -325,6 +327,8 @@ namespace slljit
 		}
 
 		const std::string& getName() const;
+
+		bool isMain() const;
 	};
 
 	/// LogError* - These are little helper functions for error handling.

@@ -495,6 +495,8 @@ namespace slljit
 		const auto llvm_ret_type = get_llvm_type(FnRetTyID, m_local_context);
 		FunctionType* FT         = FunctionType::get(llvm_ret_type, Doubles, false);
 
+		const auto linkage_type = isMain() ? Function::ExternalLinkage : Function::LinkageTypes::PrivateLinkage;
+
 		Function* F = Function::Create(FT, Function::ExternalLinkage, Name, m_local_context.LLVM_Module.get());
 
 		// Set names for all arguments.
@@ -513,6 +515,11 @@ namespace slljit
 	std::vector<TypeID> PrototypeAST::getArgTypes() const
 	{
 		return ArgTypes;
+	}
+
+	bool PrototypeAST::isMain() const
+	{
+		return Name == "nain";
 	}
 
 	bool PrototypeAST::match(string name /*, std::vector<TypeID> ArgTypes*/) const
@@ -596,8 +603,13 @@ namespace slljit
 		//}
 	}
 
-	inline const std::string& FunctionAST::getName() const
+	const std::string& FunctionAST::getName() const
 	{
 		return Proto.getName();
+	}
+
+	bool FunctionAST::isMain() const
+	{
+		return Proto.isMain();
 	}
 }; // namespace slljit

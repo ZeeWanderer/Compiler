@@ -107,9 +107,9 @@ int main(int argc, char** argv)
 	{
 		uint64 test = N;
 		uint64 left = 0;
-		uint64 right = test(left);
+		uint64 right = 1;
 
-		printd(right);
+		uint64 test = test(right);
 
 		if(N < 2)
 		{

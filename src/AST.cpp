@@ -1,4 +1,8 @@
-﻿#include "pch.h"
+﻿#include "include\AST.h"
+#include "include\AST.h"
+#include "include\AST.h"
+#include "include\AST.h"
+#include "pch.h"
 #include "AST.h"
 
 #include "Types.h"
@@ -500,6 +504,47 @@ namespace slljit
 
 		return F;
 	}
+	
+	TypeID PrototypeAST::getRetType() const
+	{
+		return this->ret_type_;
+	}
+
+	std::vector<TypeID> PrototypeAST::getArgTypes() const
+	{
+		return ArgTypes;
+	}
+
+	bool PrototypeAST::match(string name /*, std::vector<TypeID> ArgTypes*/) const
+	{
+		return name == Name /*&& ArgTypes == this->ArgTypes*/;
+	}
+
+	const std::string& PrototypeAST::getName() const
+	{
+		return Name;
+	}
+
+	bool PrototypeAST::isUnaryOp() const
+	{
+		return IsOperator && Args.size() == 1;
+	}
+
+	bool PrototypeAST::isBinaryOp() const
+	{
+		return IsOperator && Args.size() == 2;
+	}
+
+	char PrototypeAST::getOperatorName() const
+	{
+		assert(isUnaryOp() || isBinaryOp());
+		return Name[Name.size() - 1];
+	}
+
+	unsigned PrototypeAST::getBinaryPrecedence() const
+	{
+		return Precedence;
+	}
 
 	// Cast to Function*
 
@@ -551,7 +596,7 @@ namespace slljit
 		//}
 	}
 
-	const std::string& FunctionAST::getName() const
+	inline const std::string& FunctionAST::getName() const
 	{
 		return Proto.getName();
 	}

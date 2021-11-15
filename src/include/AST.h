@@ -287,45 +287,21 @@ namespace slljit
 		// Cast to Function*
 		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
 
-		TypeID getRetType() const override
-		{
-			return this->ret_type_;
-		}
+		TypeID getRetType() const override;
 
-		std::vector<TypeID> getArgTypes() const
-		{
-			return ArgTypes;
-		}
+		std::vector<TypeID> getArgTypes() const;
 
-		bool match(string name/*, std::vector<TypeID> ArgTypes*/)
-		{
-			return name == Name /*&& ArgTypes == this->ArgTypes*/;
-		}
+		bool match(string name /*, std::vector<TypeID> ArgTypes*/) const;
 
-		const std::string& getName() const
-		{
-			return Name;
-		}
+		const std::string& getName() const;
 
-		bool isUnaryOp() const
-		{
-			return IsOperator && Args.size() == 1;
-		}
-		bool isBinaryOp() const
-		{
-			return IsOperator && Args.size() == 2;
-		}
+		bool isUnaryOp() const;
 
-		char getOperatorName() const
-		{
-			assert(isUnaryOp() || isBinaryOp());
-			return Name[Name.size() - 1];
-		}
+		bool isBinaryOp() const;
 
-		unsigned getBinaryPrecedence() const
-		{
-			return Precedence;
-		}
+		char getOperatorName() const;
+
+		unsigned getBinaryPrecedence() const;
 	};
 
 	/// FunctionAST - This class represents a function definition itself.

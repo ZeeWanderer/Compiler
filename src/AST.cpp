@@ -1,8 +1,4 @@
-﻿#include "include\AST.h"
-#include "include\AST.h"
-#include "include\AST.h"
-#include "include\AST.h"
-#include "pch.h"
+﻿#include "pch.h"
 #include "AST.h"
 
 #include "Types.h"
@@ -105,34 +101,9 @@ namespace slljit
 		return m_local_context.LLVM_Builder->CreateCall(F, Ops, "binop");
 	}
 
-	/// LogError* - These are little helper functions for error handling.
-	std::unique_ptr<ExprAST> LogError(const char* Str)
-	{
-		fprintf(stderr, "Error: %s\n", Str);
-		return nullptr;
-	}
-
-	std::unique_ptr<PrototypeAST> LogErrorP(const char* Str)
-	{
-		LogError(Str);
-		return nullptr;
-	}
-
-	std::unique_ptr<FunctionAST> LogErrorF(const char* Str)
-	{
-		LogError(Str);
-		return nullptr;
-	}
-
-	ExprList LogErrorEX(const char* Str)
-	{
-		LogError(Str);
-		return {};
-	}
-
 	Value* LogErrorV(const char* Str)
 	{
-		LogError(Str);
+		fprintf(stderr, "Error: %s\n", Str);
 		return nullptr;
 	}
 

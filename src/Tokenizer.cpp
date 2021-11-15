@@ -21,12 +21,34 @@ namespace slljit
 	{
 		if (source_idx < source_code.size())
 		{
-			return source_code[source_idx++];
+			const auto char_ = source_code[source_idx++];
+
+			if (char_ != '\n')
+			{
+				line_char_count += 1;
+			}
+			else
+			{
+				line_count += 1;
+				line_char_count = 1;
+			}
+
+			return char_;
 		}
 		else
 		{
 			return EOF;
 		}
+	}
+
+	inline void Tokenizer::set_lok_location()
+	{
+		tok_location = {line_count, line_char_count - 1};
+	}
+
+	std::pair<size_t, size_t> Tokenizer::get_source_location() const
+	{
+		return tok_location;
 	}
 
 	inline pair<bool, Token> Tokenizer::is_reserved_command_id(string c)
@@ -62,6 +84,7 @@ namespace slljit
 
 		if (is_id_start_char(LastChar))
 		{ // identifier: [a-zA-Z_][a-zA-Z0-9_]*
+			set_lok_location();
 			IdentifierStr = LastChar;
 			while (is_id_char((LastChar = _getchar())))
 				IdentifierStr += LastChar;
@@ -85,6 +108,7 @@ namespace slljit
 
 		if (isdigit(LastChar) || LastChar == '.')
 		{ // Number: [0-9.]+
+			set_lok_location();
 			std::string NumStr;
 			do
 			{
@@ -115,6 +139,7 @@ namespace slljit
 
 		// Otherwise, just return the character as its ascii value.
 		int ThisChar = LastChar;
+		set_lok_location();
 		LastChar     = _getchar();
 		return ThisChar;
 	}

@@ -33,6 +33,7 @@ namespace slljit
 		tok_for  = -9,
 	};
 
+	//TODO: fix line_count and line_char_count counting
 	class Tokenizer
 	{
 	protected:
@@ -45,11 +46,18 @@ namespace slljit
 
 		size_t source_idx = 0;
 
+		size_t line_count = 1;
+		size_t line_char_count = 0;
+
+		pair<size_t, size_t> tok_location = {-1,-1};
+
 		static const set<char> identifier_start_charset;
 		static const set<char> identifier_charset;
 		static const map<string, Token> reserved_identifier_set;
 
 		inline int _getchar();
+
+		inline void set_lok_location();
 
 		static inline pair<bool, Token> is_reserved_command_id(string c);
 
@@ -68,6 +76,9 @@ namespace slljit
 		 * @ref slljit::Token
 		 */
 		int gettok();
+
+		// line, character
+		std::pair<size_t, size_t> get_source_location() const;
 
 		std::string get_identifier();
 

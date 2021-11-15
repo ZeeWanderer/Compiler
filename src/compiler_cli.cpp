@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 		return x+1;
 	}
 
-	uint64 main()
+    uint64 main()
 	{
 		uint64 test = N;
 		uint64 left = 0;
@@ -128,7 +128,13 @@ int main(int argc, char** argv)
 )";
 
 	auto begin = std::chrono::steady_clock::now();
-	m_program.compile(source_code, m_layout);
+	auto err = m_program.compile(source_code, m_layout);
+	if (err)
+	{
+		logAllUnhandledErrors(std::move(err), errs());
+		return 0;
+	}
+
 	auto end = std::chrono::steady_clock::now();
 
 	auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
@@ -153,7 +159,9 @@ int main(int argc, char** argv)
 		{
 			Context m_context;
 			Program<Data, uint64_t> m_program(m_context);
-			m_program.compile(source_code, m_layout);
+			auto err = m_program.compile(source_code, m_layout);
+			if (err)
+				return;
 		};
 
 		begin = std::chrono::steady_clock::now();

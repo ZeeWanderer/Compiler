@@ -331,15 +331,6 @@ namespace slljit
 		bool isMain() const;
 	};
 
-	/// LogError* - These are little helper functions for error handling.
-	std::unique_ptr<ExprAST> LogError(const char* Str);
-
-	std::unique_ptr<PrototypeAST> LogErrorP(const char* Str);
-
-	std::unique_ptr<FunctionAST> LogErrorF(const char* Str);
-
-	ExprList LogErrorEX(const char* Str);
-
 	Value* LogErrorV(const char* Str);
 
 	Function* getFunction(std::string Name, Context& m_context, LocalContext& m_local_context);

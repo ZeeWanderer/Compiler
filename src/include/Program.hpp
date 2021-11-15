@@ -6,6 +6,8 @@
 #include <map>
 #include <set>
 
+
+#include "Error.h"
 #include "Tokenizer.h"
 #include "Parser.h"
 #include "CodeGen.h"
@@ -32,7 +34,7 @@ namespace slljit
 		    : m_context(m_context), m_local_context(m_context)
 		{
 		}
-		void compile(string body, Layout layout)
+		Error compile(string body, Layout layout)
 		{
 			m_layout = layout;
 			Parser m_parser(m_local_context.BinopPrecedence);
@@ -40,7 +42,9 @@ namespace slljit
 			m_parser.set_source(body);
 			m_parser.set_variables(m_layout);
 
-			m_parser.parse();
+			auto err_ = m_parser.parse();
+			if (err_)
+				return err_;
 
 			// TMP CODEGEN KERNEL
 			auto [prototypes, functions] = m_parser.get_ast();
@@ -49,10 +53,18 @@ namespace slljit
 
 			//	auto loader_symbol = m_context.shllJIT->findSymbol("__layout_loader_", m_local_context.module_key);
 			//	auto symbol        = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
-			auto symbol        = ExitOnError()(m_context.shllJIT->lookup("main", m_local_context.JD));
-			auto loader_symbol = ExitOnError()(m_context.shllJIT->lookup("__layout_loader_", m_local_context.JD));
-			main_func          = (R (*)())(intptr_t)symbol.getAddress();
-			loader__           = (void (*)(T*))(intptr_t)loader_symbol.getAddress();
+			auto symbol        = m_context.shllJIT->lookup("main", m_local_context.JD);
+			if (!symbol)
+				return symbol.takeError();
+
+			auto loader_symbol = m_context.shllJIT->lookup("__layout_loader_", m_local_context.JD);
+			if (!loader_symbol)
+				return loader_symbol.takeError();
+
+			main_func          = (R (*)())(intptr_t)symbol->getAddress();
+			loader__           = (void (*)(T*))(intptr_t)loader_symbol->getAddress();
+
+			return Error::success();
 		}
 		R run(T* data)
 		{

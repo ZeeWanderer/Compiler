@@ -6,6 +6,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/Passes/PassBuilder.h"
 
 #include "JIT.h"
 #include "AST.h"
@@ -36,8 +37,13 @@ namespace slljit
 
 		std::map<std::string, AllocaInst*> NamedValues;
 
-		std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
-		std::unique_ptr<legacy::PassManager> LLVM_PM;
+		std::unique_ptr<LoopAnalysisManager> LLVM_LAM;
+		std::unique_ptr<FunctionAnalysisManager> LLVM_FAM;
+		std::unique_ptr<CGSCCAnalysisManager> LLVM_CGAM;
+		std::unique_ptr<ModuleAnalysisManager> LLVM_MAM;
+
+		std::unique_ptr<FunctionPassManager> LLVM_FPM;
+		std::unique_ptr<ModulePassManager> LLVM_MPM;
 		std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 		std::map<char, int> BinopPrecedence;
 

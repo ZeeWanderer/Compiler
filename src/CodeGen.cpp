@@ -95,21 +95,15 @@ namespace slljit
 		m_local_context.LLVM_Module->dump();
 #endif
 
-		bool Cnaged_init = m_local_context.LLVM_FPM->doInitialization();
-		assert(Cnaged_init == false);
-		//	m_local_context.LLVM_Module->dump();
-		for (auto& it : m_local_context.LLVM_Module->functions())
-		{
-			m_local_context.LLVM_FPM->run(it);
-		}
+		m_local_context.LLVM_MPM->run(*m_local_context.LLVM_Module, *m_local_context.LLVM_MAM);
 
-		m_local_context.LLVM_PM->run(*m_local_context.LLVM_Module);
-
-		bool Cnaged_fin = m_local_context.LLVM_FPM->doFinalization();
-		assert(Cnaged_fin == false);
+		//for (auto& it : m_local_context.LLVM_Module->functions())
+		//{
+		//	m_local_context.LLVM_FPM->run(it, *m_local_context.LLVM_FAM);
+		//}
 
 #if _DEBUG
-		fprintf(stderr, "; PostOptimization:\n");
+		fprintf(stderr, "\n; PostOptimization:\n");
 		m_local_context.LLVM_Module->dump();
 
 		// ASSEMBLY

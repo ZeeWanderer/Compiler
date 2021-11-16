@@ -19,7 +19,7 @@ static std::unique_ptr<IRBuilder<>> LLVM_Builder;
 static std::unique_ptr<Module> LLVM_Module;
 static std::map<std::string, AllocaInst*> NamedValues;
 static std::unique_ptr<legacy::FunctionPassManager> LLVM_FPM;
-static std::unique_ptr<legacy::PassManager> LLVM_PM;
+static std::unique_ptr<legacy::PassManager> LLVM_MPM;
 static std::unique_ptr<ShaderJIT> shllJIT;
 static JITDylib* JD;
 
@@ -60,7 +60,7 @@ static void InitializeModuleAndPassManager()
 
 	// Create a new pass manager attached to it.
 	LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(LLVM_Module.get());
-	LLVM_PM  = std::make_unique<legacy::PassManager>();
+	LLVM_MPM  = std::make_unique<legacy::PassManager>();
 
 	auto builder         = PassManagerBuilder();
 	builder.OptLevel     = CodeGenOpt::Level::Aggressive;
@@ -68,7 +68,7 @@ static void InitializeModuleAndPassManager()
 	builder.NewGVN       = true;
 
 	builder.populateFunctionPassManager(*LLVM_FPM);
-	builder.populateModulePassManager(*LLVM_PM);
+	builder.populateModulePassManager(*LLVM_MPM);
 
 	//// Create a new pass manager attached to it.
 	//LLVM_FPM = std::make_unique<legacy::FunctionPassManager>(*LLVM_Module);

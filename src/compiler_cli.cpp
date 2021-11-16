@@ -110,6 +110,7 @@ int main(int argc, char** argv)
 		uint64 right = 1;
 
 		uint64 test = test(right);
+		bool test_0 = false;
 
 		if(N < 2)
 		{

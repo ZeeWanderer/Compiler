@@ -87,11 +87,17 @@ namespace slljit
 	{
 		union
 		{
+			bool ValB;
 			double ValD;
 			int64_t ValSI64;
 		};
 
 	public:
+		NumberExprAST(bool Val)
+		    : ExprAST(boolTyID), ValB(Val)
+		{
+		}
+
 		NumberExprAST(double Val)
 		    : ExprAST(doubleTyID), ValD(Val)
 		{

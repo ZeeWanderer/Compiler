@@ -87,7 +87,7 @@ namespace slljit
 		//	static std::unique_ptr<ExprAST> ParseExpression();
 
 		/// numberexpr ::= number
-		Expected<std::unique_ptr<ExprAST>> ParseNumberExpr();
+		Expected<std::unique_ptr<ExprAST>> ParseLiteralExpr();
 
 		/// parenexpr ::= '(' expression ')'
 		Expected<std::unique_ptr<ExprAST>> ParseParenExpr();

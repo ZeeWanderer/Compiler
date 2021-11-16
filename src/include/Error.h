@@ -11,34 +11,13 @@ namespace slljit
 	public:
 		static char ID;
 
-		ParserError(const Twine& S)
-		    : Msg(S.str()), location(-1, -1)
-		{
-			EC = std::make_error_code(std::errc::interrupted);
-		}
+		ParserError(const Twine& S, std::errc EC = std::errc::interrupted);
 
-		ParserError(const Twine& S, std::pair<size_t, size_t> location)
-		    : Msg(S.str()), location(location)
-		{
-			EC = std::make_error_code(std::errc::interrupted);
-		}
+		ParserError(const Twine& S, std::pair<size_t, size_t> location, std::errc EC = std::errc::interrupted);
 
-		void log(raw_ostream& OS) const override
-		{
-			if (location == std::pair<size_t, size_t>{-1, -1})
-			{
-				OS << "error: " << Msg;
-			}
-			else
-			{
-				OS << "(" << location.first << "," << location.second << "): error: " << Msg;
-			}
-		}
+		void log(raw_ostream& OS) const override;
 
-		std::error_code convertToErrorCode() const override
-		{
-			return EC;
-		}
+		std::error_code convertToErrorCode() const override;
 
 	private:
 		// line, character

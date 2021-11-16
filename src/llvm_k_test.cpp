@@ -1,4 +1,4 @@
-// Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
+﻿// Compiler.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include "pch.h"
@@ -24,7 +24,7 @@ enum Token
 
     // primary
     tok_identifier = -4,
-    tok_number     = -5,
+    tok_literal     = -5,
 
     // control
     tok_if   = -6,
@@ -42,7 +42,7 @@ enum Token
 };
 
 static std::string IdentifierStr; // Filled in if tok_identifier
-static double NumVal;             // Filled in if tok_number
+static double NumVal;             // Filled in if tok_literal
 
 /// gettok - Return the next token from standard input.
 static int gettok()
@@ -92,7 +92,7 @@ static int gettok()
         } while (isdigit(LastChar) || LastChar == '.');
 
         NumVal = strtod(NumStr.c_str(), nullptr);
-        return tok_number;
+        return tok_literal;
     }
 
     if (LastChar == '#')
@@ -374,7 +374,7 @@ std::unique_ptr<PrototypeAST> LogErrorP(const char* Str)
 static std::unique_ptr<ExprAST> ParseExpression();
 
 /// numberexpr ::= number
-static std::unique_ptr<ExprAST> ParseNumberExpr()
+static std::unique_ptr<ExprAST> ParseLiteralExpr()
 {
     auto Result = std::make_unique<NumberExprAST>(NumVal);
     getNextToken(); // consume the number
@@ -575,7 +575,7 @@ static std::unique_ptr<ExprAST> ParsePrimary()
     {
     default: return LogError("unknown token when expecting an expression");
     case tok_identifier: return ParseIdentifierExpr();
-    case tok_number: return ParseNumberExpr();
+    case tok_literal: return ParseLiteralExpr();
     case '(': return ParseParenExpr();
     case tok_if: return ParseIfExpr();
     case tok_for: return ParseForExpr();
@@ -688,7 +688,7 @@ static std::unique_ptr<PrototypeAST> ParsePrototype()
         getNextToken();
 
         // Read the precedence if present.
-        if (CurTok == tok_number)
+        if (CurTok == tok_literal)
         {
             if (NumVal < 1 || NumVal > 100)
                 return LogErrorP("Invalid precedence: must be 1..100");

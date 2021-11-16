@@ -142,14 +142,19 @@ namespace slljit
 
 	Value* NumberExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
-		if (isIntegerTy(type_))
+		const auto llvm_type = get_llvm_type(type_, m_local_context);
+
+		switch (type_)
 		{
-			const auto llvm_type = get_llvm_type(type_, m_local_context);
-			return ConstantInt::get(llvm_type, APInt(llvm_type->getIntegerBitWidth(), ValSI64, isSigned(type_)));
-		}
-		else
-		{
+		case slljit::doubleTyID:
 			return ConstantFP::get(*m_local_context.LLVM_Context, APFloat(ValD));
+			break;
+		case slljit::boolTyID:
+			return ConstantInt::get(llvm_type, APInt(llvm_type->getIntegerBitWidth(), ValB, isSigned(type_)));
+			break;
+		case slljit::int64TyID:
+			return ConstantInt::get(llvm_type, APInt(llvm_type->getIntegerBitWidth(), ValSI64, isSigned(type_)));
+			break;
 		}
 	}
 

@@ -17,6 +17,8 @@ namespace slljit
 
 	const map<string, Token> Tokenizer::reserved_identifier_set = {{"extern", tok_extern}, {"if", tok_if}, {"else", tok_else}, {"for", tok_for}};
 
+	const set<string> special_literals = {"true", "false"};
+
 	inline int Tokenizer::_getchar()
 	{
 		if (source_idx < source_code.size())
@@ -49,6 +51,16 @@ namespace slljit
 	std::pair<size_t, size_t> Tokenizer::get_source_location() const
 	{
 		return tok_location;
+	}
+
+	inline bool Tokenizer::is_special_literal(string c)
+	{
+		auto it = special_literals.find(c);
+		if (it != special_literals.end())
+		{
+			return true;
+		}
+		return false;
 	}
 
 	inline pair<bool, Token> Tokenizer::is_reserved_command_id(string c)
@@ -96,6 +108,13 @@ namespace slljit
 				return tok_type;
 			}
 
+			//SPECIAL LITERALS
+			if (is_special_literal(IdentifierStr))
+			{
+				LiteralStr = IdentifierStr;
+				return tok_literal;
+			}
+
 			// COMMANDS
 			{
 				auto [is_command, cmd_tok] = is_reserved_command_id(IdentifierStr);
@@ -117,9 +136,9 @@ namespace slljit
 			} while (isdigit(LastChar) || LastChar == '.');
 
 			//	NumVal = strtod(NumStr.c_str(), nullptr);
-			NumberStr = NumStr;
+			LiteralStr = NumStr;
 			//std::from_chars(NumStr.c_str(), NumStr.c_str() + NumStr.size(), NumVal);
-			return tok_number;
+			return tok_literal;
 		}
 
 		if (LastChar == '#')
@@ -154,8 +173,8 @@ namespace slljit
 		return TypeIdentifierStr;
 	}
 
-	std::string Tokenizer::get_number_string()
+	std::string Tokenizer::get_literal_string()
 	{
-		return NumberStr;
+		return LiteralStr;
 	}
 }; // namespace slljit

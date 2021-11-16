@@ -16,7 +16,7 @@ namespace slljit
 
 	enum TypeID
 	{
-		boolTyID, // unigned int1
+		boolTyID, // unsigned int1
 		doubleTyID,
 		int64TyID,
 		uint64TyID,

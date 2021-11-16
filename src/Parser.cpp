@@ -117,24 +117,34 @@ namespace slljit
 
 	/// numberexpr ::= number
 
-	Expected<std::unique_ptr<ExprAST>> Parser::ParseNumberExpr()
+	Expected<std::unique_ptr<ExprAST>> Parser::ParseLiteralExpr()
 	{
-		const auto numStr = m_tokenizer.get_number_string();
-		if (numStr.find_first_of(".", 0) != string::npos)
+		const auto literalStr = m_tokenizer.get_literal_string();
+		if (literalStr == "true" || literalStr == "false") // boolean
+		{
+			bool value = literalStr == "true";
+			getNextToken(); // consume the literal
+			return std::make_unique<NumberExprAST>(value);
+		}
+		else if (literalStr.find_first_of(".", 0) != string::npos) // floating point type
 		{
 			double value;
-			std::from_chars(numStr.c_str(), numStr.c_str() + numStr.size(), value);
-			auto Result = std::make_unique<NumberExprAST>(value);
-			getNextToken(); // consume the number
-			return std::move(Result);
+			auto [_, err] = std::from_chars(literalStr.c_str(), literalStr.c_str() + literalStr.size(), value);
+			if (err != std::errc())
+				return make_error<ParserError>("invalid number literal", m_tokenizer.get_source_location(), err);
+
+			getNextToken(); // consume the literal
+			return std::make_unique<NumberExprAST>(value);
 		}
-		else
+		else // integer type
 		{
 			int64_t value;
-			std::from_chars(numStr.c_str(), numStr.c_str() + numStr.size(), value);
-			auto Result = std::make_unique<NumberExprAST>(value);
-			getNextToken(); // consume the number
-			return std::move(Result);
+			auto [_, err] = std::from_chars(literalStr.c_str(), literalStr.c_str() + literalStr.size(), value);
+			if (err != std::errc())
+				return make_error<ParserError>("invalid number literal", m_tokenizer.get_source_location(), err);
+
+			getNextToken(); // consume the literal
+			return std::make_unique<NumberExprAST>(value);
 		}
 	}
 
@@ -400,9 +410,9 @@ namespace slljit
 			else
 				return err_.takeError();
 		}
-		case tok_number:
+		case tok_literal:
 		{
-			if (auto err_ = ParseNumberExpr())
+			if (auto err_ = ParseLiteralExpr())
 				return std::move(*err_);
 			else
 				return err_.takeError();

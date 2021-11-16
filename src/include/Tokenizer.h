@@ -25,7 +25,7 @@ namespace slljit
 
 		// primary
 		tok_identifier = -4,
-		tok_number     = -5,
+		tok_literal    = -5,
 
 		// control
 		tok_if   = -6,
@@ -39,9 +39,8 @@ namespace slljit
 	protected:
 		std::string IdentifierStr;     // Filled in if tok_identifier
 		std::string TypeIdentifierStr; // Filled in if tok_type
-		std::string NumberStr;         // Filled in if tok_number
+		std::string LiteralStr;        // Filled in if tok_literal
 
-		double NumVal; // Filled in if tok_number
 		std::string_view source_code;
 
 		size_t source_idx = 0;
@@ -58,6 +57,8 @@ namespace slljit
 		inline int _getchar();
 
 		inline void set_lok_location();
+
+		static inline bool is_special_literal(string c);
 
 		static inline pair<bool, Token> is_reserved_command_id(string c);
 
@@ -84,6 +85,6 @@ namespace slljit
 
 		std::string get_type_identifier();
 
-		std::string get_number_string();
+		std::string get_literal_string();
 	};
 }; // namespace slljit

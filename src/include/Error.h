@@ -26,4 +26,22 @@ namespace slljit
 		std::error_code EC;
 	};
 
+	class CompileError : public ErrorInfo<CompileError>
+	{
+
+	public:
+		static char ID;
+
+		CompileError(const Twine& S, std::errc EC = std::errc::interrupted);
+
+		void log(raw_ostream& OS) const override;
+
+		std::error_code convertToErrorCode() const override;
+
+	private:
+		// line, character
+		std::string Msg;
+		std::error_code EC;
+	};
+
 }; // namespace slljit

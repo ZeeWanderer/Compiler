@@ -72,22 +72,24 @@ namespace slljit
 			gVar->setConstant(true);
 		}
 	}
-	void CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context)
+	Error CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context)
 	{
 		for (auto it = prototypes.begin(); it != prototypes.end(); ++it)
 		{
-			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
+			if (auto FnIR = (*it)->codegen(m_context, m_local_context))
 			{
 				m_local_context.FunctionProtos[(*it)->getName()] = std::move((*it));
 			}
+			else
+				return FnIR.takeError();
 		}
 
 		for (auto it = functions.begin(); it != functions.end(); ++it)
 		{
-			if (auto* FnIR = static_cast<Function*>((*it)->codegen(m_context, m_local_context)))
+			auto FnIR = (*it)->codegen(m_context, m_local_context);
+			if (!FnIR)
 			{
-				// FnIR->print(errs());
-				//	fprintf(stderr, "\n");
+				return FnIR.takeError();
 			}
 		}
 #if _DEBUG
@@ -133,15 +135,15 @@ namespace slljit
 
 		if (err)
 		{
-			// TODO: return compile error
+			return err;
 		}
 
 #if _DEBUG
-		if (err)
-			fprintf(stderr, "; error\n");
 
 		fprintf(stderr, "; JDlib:\n");
 		m_local_context.JD.dump(dbgs());
 #endif
+
+		return Error::success();
 	}
 }; // namespace slljit

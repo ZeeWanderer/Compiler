@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 			right = tmp;
 		}
 
-		return right + test;
+		return right;
 	}
 )";
 

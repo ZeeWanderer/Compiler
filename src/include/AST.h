@@ -60,7 +60,7 @@ namespace slljit
 			return false;
 		}
 
-		virtual Value* codegen(Context& m_context, LocalContext& m_local_context) = 0;
+		virtual Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) = 0;
 	};
 
 	typedef std::list<std::unique_ptr<ExprAST>> ExprList;
@@ -78,7 +78,7 @@ namespace slljit
 			return true;
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	// typedef std::list<std::unique_ptr<ExprAST>> ExprList;
@@ -108,7 +108,7 @@ namespace slljit
 		{
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	/// VariableExprAST - Expression class for referencing a variable, like "a".
@@ -122,7 +122,7 @@ namespace slljit
 		{
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 		const std::string& getName() const
 		{
 			return Name;
@@ -142,7 +142,7 @@ namespace slljit
 			type_ = this->Operand->getType();
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 	/// UnaryExprAST - Expression class for a unary operator.
 	class ReturnExprAST : public ExprAST
@@ -160,7 +160,7 @@ namespace slljit
 			return true;
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	/// BinaryExprAST - Expression class for a binary operator.
@@ -178,7 +178,7 @@ namespace slljit
 			type_      = LHSTy + RHSTy;
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	/// CallExprAST - Expression class for function calls.
@@ -194,7 +194,7 @@ namespace slljit
 		{
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	/// IfExprAST - Expression class for if/else.
@@ -215,7 +215,7 @@ namespace slljit
 			return false;
 		}
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	/// ForExprAST - Expression class for for/in.
@@ -256,7 +256,7 @@ namespace slljit
 		//   store nextvar -> g_var
 		//   br endcond, loop, endloop
 		// outloop:
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	/// VarExprAST - Expression class for g_var/in
@@ -268,7 +268,7 @@ namespace slljit
 		VarExprAST(TypeID VarType, std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames)
 		    : ExprAST(std::move(VarType)), VarNames(std::move(VarNames)){};
 
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
 	/// PrototypeAST - This class represents the "prototype" for a function,
@@ -290,7 +290,7 @@ namespace slljit
 		}
 
 		// Cast to Function*
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 
 		TypeID getRetType() const override;
 
@@ -324,7 +324,7 @@ namespace slljit
 		}
 
 		// Cast to Function*
-		Value* codegen(Context& m_context, LocalContext& m_local_context) override;
+		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 
 		TypeID getRetType() const override
 		{
@@ -336,9 +336,7 @@ namespace slljit
 		bool isMain() const;
 	};
 
-	Value* LogErrorV(const char* Str);
-
-	Function* getFunction(std::string Name, Context& m_context, LocalContext& m_local_context);
+	Expected<Function*> getFunction(std::string Name, Context& m_context, LocalContext& m_local_context);
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
 	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, TypeID VarType, Context& m_context, LocalContext& m_local_context);

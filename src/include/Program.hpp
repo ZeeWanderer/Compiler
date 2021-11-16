@@ -49,10 +49,10 @@ namespace slljit
 			// TMP CODEGEN KERNEL
 			auto [prototypes, functions] = m_parser.get_ast();
 			m_codegen.compile_layout(m_context, m_local_context, m_layout);
-			m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context);
+			auto compile_err = m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context);
+			if (compile_err)
+				return compile_err;
 
-			//	auto loader_symbol = m_context.shllJIT->findSymbol("__layout_loader_", m_local_context.module_key);
-			//	auto symbol        = m_context.shllJIT->findSymbol("main", m_local_context.module_key);
 			auto symbol = m_context.shllJIT->lookup("main", m_local_context.JD);
 			if (!symbol)
 				return symbol.takeError();

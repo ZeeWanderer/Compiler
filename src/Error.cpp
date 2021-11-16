@@ -36,4 +36,26 @@ namespace slljit
 	{
 		return EC;
 	}
+
+	char CompileError::ID;
+
+	CompileError::CompileError(const Twine& S, std::errc EC)
+	    : Msg(S.str()), EC(std::make_error_code(EC))
+	{
+	}
+
+	void CompileError::log(raw_ostream& OS) const
+	{
+		OS << "error: " << Msg;
+
+		if (EC != std::errc::interrupted)
+		{
+			OS << " error_code: " << EC.message();
+		}
+	}
+
+	std::error_code CompileError::convertToErrorCode() const
+	{
+		return EC;
+	}
 }; // namespace slljit

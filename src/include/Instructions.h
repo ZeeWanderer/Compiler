@@ -15,6 +15,8 @@ namespace slljit
 
 	class LocalContext;
 
+	//! CmpPredicate enum
+	/*! Defines predicates for comparison operation */
 	enum CmpPredicate
 	{
 		equal,
@@ -50,23 +52,40 @@ namespace slljit
 		    {boolTyID, llvm_int_pred}};
 	}; // namespace
 
+	/// Creates explict cast
 	void CreateExplictCast(Value*& val, TypeID fromTy, TypeID toTy, LocalContext& ctx);
 
+	/// Creates implict cast
 	TypeID CreateImplictCast(Value*& lhs, Value*& rhs, TypeID lhsTy, TypeID rhsTy, LocalContext& ctx);
 
-	// Requires both operands to be of the same type
+	/**
+	 * Creates CMP instruction. 
+	 * Requires both operands to be of the same type.
+	 */
 	Value* CtreateCMP(CmpPredicate pred, Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
-	// Requires both operands to be of the same type
+	/**
+	 * Creates CMP instruction. 
+	 * Requires both operands to be of the same type.
+	 */
 	Value* CreateAdd(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
-	// Requires both operands to be of the same type
+	/**
+	 * Creates Sub instruction. 
+	 * Requires both operands to be of the same type.
+	 */
 	Value* CreateSub(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
-	// Requires both operands to be of the same type
+	/**
+	 * Creates Mul instruction. 
+	 * Requires both operands to be of the same type.
+	 */
 	Value* CreateMul(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
-	// Requires both operands to be of the same type
+	/**
+	 * Creates Div instruction. 
+	 * Requires both operands to be of the same type.
+	 */
 	Value* CreateDiv(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name = "");
 
 }; // namespace slljit

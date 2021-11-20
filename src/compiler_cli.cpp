@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 )";
 
 	auto begin = std::chrono::steady_clock::now();
-	auto err = m_program.compile(source_code, m_layout);
+	auto err   = m_program.compile(source_code, m_layout);
 	if (err)
 	{
 		logAllUnhandledErrors(std::move(err), errs());
@@ -155,9 +155,11 @@ int main(int argc, char** argv)
 	std::cout << "run_time = " << run_time.count() << "[ns]" << std::endl;
 
 	const auto hw_c = std::thread::hardware_concurrency();
-	std::cout << "CPUtm: " << hw_c/2 << "C" << hw_c << "T" << std::endl;
+	std::cout << "CPUtm: " << hw_c / 2 << "C" << hw_c << "T" << std::endl;
 
-	//return 0; // cut off testing code
+#if _DEBUG
+	return 0; // cut off testing code
+#endif
 
 	{
 		auto lambda = [&source_code, &m_layout]()

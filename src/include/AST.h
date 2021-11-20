@@ -20,9 +20,7 @@ namespace slljit
 	// Abstract Syntax Tree (aka Parse Tree)
 	//===----------------------------------------------------------------------===//
 
-	// namespace
-	//{
-	/// ExprAST - Base class for all expression nodes.
+	/// Base class for all expression nodes.
 	class ExprAST
 	{
 	public:
@@ -65,6 +63,7 @@ namespace slljit
 
 	typedef std::list<std::unique_ptr<ExprAST>> ExprList;
 
+	/// Expression class to represent NoOp.
 	class NoOpAST : public ExprAST
 	{
 	public:
@@ -81,8 +80,7 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	// typedef std::list<std::unique_ptr<ExprAST>> ExprList;
-	/// NumberExprAST - Expression class for numeric literals like "1.0".
+	/// Expression class for numeric literals like "1.0".
 	class NumberExprAST : public ExprAST
 	{
 		union
@@ -111,7 +109,7 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	/// VariableExprAST - Expression class for referencing a variable, like "a".
+	/// Expression class for referencing a variable, like "a".
 	class VariableExprAST : public ExprAST
 	{
 		std::string Name;
@@ -129,7 +127,7 @@ namespace slljit
 		}
 	};
 
-	/// UnaryExprAST - Expression class for a unary operator.
+	/// Expression class for a unary operator.
 	class UnaryExprAST : public ExprAST
 	{
 		char Opcode;
@@ -144,7 +142,8 @@ namespace slljit
 
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
-	/// UnaryExprAST - Expression class for a unary operator.
+
+	/// Expression class for a unary operator.
 	class ReturnExprAST : public ExprAST
 	{
 		std::unique_ptr<ExprAST> Operand;
@@ -163,7 +162,7 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	/// BinaryExprAST - Expression class for a binary operator.
+	/// Expression class for a binary operator.
 	class BinaryExprAST : public ExprAST
 	{
 		char Op;
@@ -181,7 +180,7 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	/// CallExprAST - Expression class for function calls.
+	/// Expression class for function calls.
 	class CallExprAST : public ExprAST
 	{
 		std::string Callee;
@@ -197,7 +196,7 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	/// IfExprAST - Expression class for if/else.
+	/// Expression class for if/else.
 	class IfExprAST : public ExprAST
 	{
 		std::unique_ptr<ExprAST> Cond;
@@ -218,7 +217,7 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	/// ForExprAST - Expression class for for/in.
+	/// Expression class for for/in.
 	class ForExprAST : public ExprAST
 	{
 		//	std::string VarName;
@@ -259,7 +258,7 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	/// VarExprAST - Expression class for g_var/in
+	/// Expression class for g_var/in
 	class VarExprAST : public ExprAST
 	{
 		std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
@@ -271,9 +270,12 @@ namespace slljit
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;
 	};
 
-	/// PrototypeAST - This class represents the "prototype" for a function,
-	/// which captures its name, and its argument names (thus implicitly the number
-	/// of arguments the function takes), as well as if it is an operator.
+	/// Expression class for function prototypes
+	/**
+	 * This class represents the "prototype" for a function,
+	 * which captures its name, and its argument names (thus implicitly the number
+	 * of arguments the function takes), as well as if it is an operator.
+	 */
 	class PrototypeAST : public ExprAST
 	{
 		const std::string Name;
@@ -311,7 +313,7 @@ namespace slljit
 		unsigned getBinaryPrecedence() const;
 	};
 
-	/// FunctionAST - This class represents a function definition itself.
+	/// This class represents a function definition itself.
 	class FunctionAST : public ExprAST
 	{
 		PrototypeAST& Proto;
@@ -337,6 +339,7 @@ namespace slljit
 	};
 
 	Expected<Function*> getFunction(std::string Name, Context& m_context, LocalContext& m_local_context);
+
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
 	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, TypeID VarType, Context& m_context, LocalContext& m_local_context);

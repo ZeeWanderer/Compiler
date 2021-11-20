@@ -14,16 +14,17 @@ namespace slljit
 
 	class LocalContext;
 
+	//! TypeID enum.
+	/*! Represents value types. */
 	enum TypeID
 	{
-		boolTyID, // unsigned int1
-		doubleTyID,
-		int64TyID,
-		uint64TyID,
+		boolTyID,   /*!< boolean int1 unsigned */
+		doubleTyID, /*!< double 64 bit wide */
+		int64TyID,  /*!< signed int64 */
+		uint64TyID, /*!< unsigned int64 */
 
-		// special types
-		functionTyID,
-		none
+		functionTyID, /*!< Represents function */
+		none          /*!< untyped value. Not synonymous to void. */
 	};
 
 	namespace
@@ -75,15 +76,25 @@ namespace slljit
 		    {{boolTyID, doubleTyID}, Instruction::UIToFP}};
 	}; // namespace
 
+	/// Translates TypeID types to llvm types.
 	llvm::Type* get_llvm_type(TypeID TyID, LocalContext& m_local_context);
 
+	/**
+	 * Used for implict casting.
+	 * @return Resulting type for any operation perormed on given types.
+	 */
 	TypeID operator+(TypeID lhs, TypeID rhs);
 
+	/// Checks if value type is floating point type.
 	bool isFloatingPointTy(TypeID type_);
 
+	/// Checks if value type is integer type.
 	bool isIntegerTy(TypeID type_);
 
-	// requires type to be integer
+	/**
+	 * Checks if value type is signed.
+	 * Requires type to be integer.
+	 */
 	bool isSigned(TypeID type_);
 
 }; // namespace slljit

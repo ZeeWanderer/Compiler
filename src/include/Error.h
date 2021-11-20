@@ -5,6 +5,7 @@ namespace slljit
 {
 	using namespace llvm;
 
+	/// Used to represent Parser errors.
 	class ParserError : public ErrorInfo<ParserError>
 	{
 
@@ -26,6 +27,7 @@ namespace slljit
 		std::error_code EC;
 	};
 
+	/// Used to repseresnt CodeGen and compile() errors.
 	class CompileError : public ErrorInfo<CompileError>
 	{
 

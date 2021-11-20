@@ -18,24 +18,44 @@ namespace slljit
 {
 	using namespace std;
 
+	/// Used to compile, hold and run a shader program.
+	/** 
+	 * Thread-safe for compilation.
+	 * @tparam T data structure type used to pass data to compiled function
+	 * @tparam R compiled function return type
+	 */
 	template <class T, typename R>
 	class Program
 	{
-	public:
+	private:
 		Context& m_context;
 		LocalContext m_local_context;
 		Layout m_layout;
-		//	vector<pair<intptr_t, GlobalDefinition>> runtime_globals;
-		R (*main_func)
+
+		R(*main_func)
 		(void)               = nullptr;
 		void (*loader__)(T*) = nullptr;
 
 	public:
+		/**
+		 * Program constructor
+		 * @param m_context global context to use 
+		 */
 		Program(Context& m_context)
 		    : m_context(m_context), m_local_context(m_context)
 		{
 		}
-		Error compile(string body, Layout layout, CompileOptions options = CompileOptions())
+
+		/**
+		 * Compiles source to binary if not already compiled.
+		 * No recompilation occurs if different parameters are passed but Program is already compiled. 
+		 * Thread-safe.
+		 * @param body Source code to compile
+		 * @param layout Layout object to use for defining input data layout
+		 * @param options CompileOptions to use for compilation.
+		 * @return Error object, requires to be checked.
+		 */
+		[[nodiscard]] Error compile(string body, Layout layout, CompileOptions options = CompileOptions())
 		{
 			if (main_func != nullptr && loader__ != nullptr)
 				return Error::success();
@@ -70,6 +90,12 @@ namespace slljit
 
 			return Error::success();
 		}
+
+		/**
+		 * Run compiled function with provided data object pointer.
+		 * @param data Pointer to the data object.
+		 * @return Passthrough value from compiled function.
+		 */
 		R run(T* data)
 		{
 			loader__(data);

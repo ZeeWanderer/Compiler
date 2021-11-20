@@ -18,6 +18,10 @@ namespace slljit
 
 	static void init__();
 
+	/// Used to hold global compilation and execution context.
+	/**
+	 * Holds jit compilation engine.
+	 */
 	class Context
 	{
 	public:
@@ -27,6 +31,10 @@ namespace slljit
 		Context();
 	};
 
+	/// Used to define context for a single Program.
+	/**
+	 * Holds Program-local context variables like binary module the Program is compiled into.
+	 */
 	class LocalContext
 	{
 	public:

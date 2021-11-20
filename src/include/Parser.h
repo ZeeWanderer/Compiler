@@ -115,7 +115,6 @@ namespace slljit
 		const PrototypeAST* get_current_function_scope();
 
 	protected:
-
 		/// Get the precedence of the pending binary operator token.
 		int GetTokPrecedence();
 

@@ -62,7 +62,8 @@ set(slljit_INTERFACE
 		include/Tokenizer.h 
 		include/Types.h
 		include/Instructions.h
-		include/Error.h)
+		include/Error.h
+		include/Options.h)
 
 set(slljit_SRC
 		pch.cpp
@@ -74,7 +75,8 @@ set(slljit_SRC
 		Tokenizer.cpp
 		Types.cpp
 		Instructions.cpp
-		Error.cpp)
+		Error.cpp
+		Options.cpp)
 
 add_library(slljit STATIC ${slljit_SRC} ${slljit_INTERFACE})
 target_include_directories(slljit PUBLIC ${LLVM_INCLUDE_DIRS})

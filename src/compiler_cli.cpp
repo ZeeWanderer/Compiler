@@ -84,6 +84,7 @@ struct Data
 
 int main(int argc, char** argv)
 {
+
 	Context m_context;
 	Program<Data, uint64_t> m_program(m_context);
 	Layout m_layout;
@@ -153,7 +154,10 @@ int main(int argc, char** argv)
 	std::cout << "retval = " << retval << std::endl;
 	std::cout << "run_time = " << run_time.count() << "[ns]" << std::endl;
 
-	return 0; // cut off testing code
+	const auto hw_c = std::thread::hardware_concurrency();
+	std::cout << "CPUtm: " << hw_c/2 << "C" << hw_c << "T" << std::endl;
+
+	//return 0; // cut off testing code
 
 	{
 		auto lambda = [&source_code, &m_layout]()

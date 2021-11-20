@@ -12,6 +12,7 @@
 #include "CodeGen.h"
 #include "Context.h"
 #include "Layout.h"
+#include "Options.h"
 
 namespace slljit
 {
@@ -34,8 +35,11 @@ namespace slljit
 		    : m_context(m_context), m_local_context(m_context)
 		{
 		}
-		Error compile(string body, Layout layout)
+		Error compile(string body, Layout layout, CompileOptions options = CompileOptions())
 		{
+			if (main_func != nullptr && loader__ != nullptr)
+				return Error::success();
+
 			m_layout = layout;
 			Parser m_parser(m_local_context.BinopPrecedence);
 			CodeGen m_codegen;
@@ -49,7 +53,7 @@ namespace slljit
 			// TMP CODEGEN KERNEL
 			auto [prototypes, functions] = m_parser.get_ast();
 			m_codegen.compile_layout(m_context, m_local_context, m_layout);
-			auto compile_err = m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context);
+			auto compile_err = m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context, options);
 			if (compile_err)
 				return compile_err;
 

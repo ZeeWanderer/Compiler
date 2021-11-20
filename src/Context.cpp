@@ -44,21 +44,5 @@ namespace slljit
 		// Open a new module.
 		LLVM_Module = std::make_unique<Module>("shader_module", *LLVM_Context);
 		LLVM_Module->setDataLayout(m_context.shllJIT->getDataLayout());
-
-		PassBuilder PB;
-
-		LLVM_LAM  = std::make_unique<LoopAnalysisManager>();
-		LLVM_FAM  = std::make_unique<FunctionAnalysisManager>();
-		LLVM_CGAM = std::make_unique<CGSCCAnalysisManager>();
-		LLVM_MAM  = std::make_unique<ModuleAnalysisManager>();
-
-		PB.registerModuleAnalyses(*LLVM_MAM);
-		PB.registerCGSCCAnalyses(*LLVM_CGAM);
-		PB.registerFunctionAnalyses(*LLVM_FAM);
-		PB.registerLoopAnalyses(*LLVM_LAM);
-		PB.crossRegisterProxies(*LLVM_LAM, *LLVM_FAM, *LLVM_CGAM, *LLVM_MAM);
-
-		LLVM_FPM = std::make_unique<FunctionPassManager>(PB.buildFunctionSimplificationPipeline(PassBuilder::OptimizationLevel::O3, ThinOrFullLTOPhase::None));
-		LLVM_MPM = std::make_unique<ModulePassManager>(PB.buildPerModuleDefaultPipeline(PassBuilder::OptimizationLevel::O3, true));
 	}
 }; // namespace slljit

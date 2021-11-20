@@ -1,9 +1,13 @@
 ﻿#include "pch.h"
+
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Support/raw_ostream.h"
+
 #include "CodeGen.h"
 #include "Layout.h"
 #include "Types.h"
+#include "Options.h"
 
-#include "llvm/Support/raw_ostream.h"
 
 namespace slljit
 {
@@ -72,7 +76,7 @@ namespace slljit
 			gVar->setConstant(true);
 		}
 	}
-	Error CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context)
+	Error CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context, CompileOptions& options)
 	{
 		for (auto it = prototypes.begin(); it != prototypes.end(); ++it)
 		{
@@ -92,12 +96,32 @@ namespace slljit
 				return FnIR.takeError();
 			}
 		}
+
 #if _DEBUG
 		fprintf(stderr, "; PreOptimization:\n");
 		m_local_context.LLVM_Module->dump();
 #endif
+		if (options.opt_level != CompileOptions::O0)
+		{
+			const auto llvm_opt_level = options.to_llvm_opt_level();
+			PassBuilder PB;
 
-		m_local_context.LLVM_MPM->run(*m_local_context.LLVM_Module, *m_local_context.LLVM_MAM);
+			auto LLVM_LAM  = LoopAnalysisManager();
+			auto LLVM_FAM  = FunctionAnalysisManager();
+			auto LLVM_CGAM = CGSCCAnalysisManager();
+			auto LLVM_MAM  = ModuleAnalysisManager();
+
+			PB.registerModuleAnalyses(LLVM_MAM);
+			PB.registerCGSCCAnalyses(LLVM_CGAM);
+			PB.registerFunctionAnalyses(LLVM_FAM);
+			PB.registerLoopAnalyses(LLVM_LAM);
+			PB.crossRegisterProxies(LLVM_LAM, LLVM_FAM, LLVM_CGAM, LLVM_MAM);
+
+			auto LLVM_FPM = FunctionPassManager(PB.buildFunctionSimplificationPipeline(llvm_opt_level, ThinOrFullLTOPhase::None));
+			auto LLVM_MPM = ModulePassManager(PB.buildPerModuleDefaultPipeline(llvm_opt_level, true));
+
+			LLVM_MPM.run(*m_local_context.LLVM_Module, LLVM_MAM);
+		}
 
 		//for (auto& it : m_local_context.LLVM_Module->functions())
 		//{

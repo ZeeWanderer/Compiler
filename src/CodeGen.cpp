@@ -8,7 +8,6 @@
 #include "Types.h"
 #include "Options.h"
 
-
 namespace slljit
 {
 	using namespace slljit;
@@ -16,55 +15,21 @@ namespace slljit
 	using namespace llvm::orc;
 	using namespace std;
 
-	void CodeGen::compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout)
+	void CodeGen::compile_layout(Context& m_context, LocalContext& m_local_context)
 	{
-		std::vector<Type*> StructMembers; // layout structure
-		StructMembers.reserve(m_layout.globals.size());
-
 		// Insert variable globals
 		// Globals contain pointers to layout members, init with nullptr
-		for (auto& global : m_layout.globals)
+		for (auto& global : m_local_context.layout.globals)
 		{
 			Type* type_ = get_llvm_type(TypeID(global.type), m_local_context);
 			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, type_->getPointerTo());
 			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.name);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
 			gVar->setInitializer(ConstantPointerNull::get(type_->getPointerTo()));
-
-			StructMembers.emplace_back(type_);
 		}
-
-		auto loader_struct_type = StructType::create(*m_local_context.LLVM_Context, StructMembers, "layout__", false);
-
-		// generate loader function
-		std::vector<Type*> Args(1, loader_struct_type->getPointerTo());
-		FunctionType* FT = FunctionType::get(Type::getVoidTy(*m_local_context.LLVM_Context), Args, false);
-
-		Function* TheFunction = Function::Create(FT, Function::ExternalLinkage, "__layout_loader_", m_local_context.LLVM_Module.get());
-
-		// Set names for all arguments.
-		auto arg            = TheFunction->arg_begin();
-		Value* data_pointer = arg;
-		arg->setName("data_ptr");
-
-		BasicBlock* BB = BasicBlock::Create(*m_local_context.LLVM_Context, "entry", TheFunction);
-		m_local_context.LLVM_Builder->SetInsertPoint(BB);
-
-		auto& g_list = m_local_context.LLVM_Module->getGlobalList();
-		std::vector<Value*> indices{m_local_context.LLVM_Builder->getInt32(0), m_local_context.LLVM_Builder->getInt32(0)};
-		uint32_t idx = 0;
-		// Load offsets into variable globals
-		for (auto& g_var : g_list)
-		{
-			Value* gep = m_local_context.LLVM_Builder->CreateGEP(loader_struct_type, data_pointer, indices);
-			m_local_context.LLVM_Builder->CreateStore(gep, &g_var);
-			idx++;
-			indices[1] = m_local_context.LLVM_Builder->getInt32(idx);
-		}
-		m_local_context.LLVM_Builder->CreateRet(nullptr);
 
 		// Insert constant globals
-		for (auto& global : m_layout.constant_globals)
+		for (auto& global : m_local_context.layout.constant_globals)
 		{
 			Type* type_      = get_llvm_type(TypeID(global.second.type), m_local_context);
 			Constant* init_c = global.second.get_init_val(m_local_context);
@@ -76,7 +41,7 @@ namespace slljit
 			gVar->setConstant(true);
 		}
 	}
-	Error CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context, CompileOptions& options)
+	Error CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context, CompileOptions& options, bool bDumpIR)
 	{
 		for (auto it = prototypes.begin(); it != prototypes.end(); ++it)
 		{
@@ -97,10 +62,12 @@ namespace slljit
 			}
 		}
 
-#if _DEBUG
-		fprintf(stderr, "; PreOptimization:\n");
-		m_local_context.LLVM_Module->dump();
-#endif
+		if (bDumpIR)
+		{
+			fprintf(stderr, "; PreOptimization:\n");
+			m_local_context.LLVM_Module->dump();
+		}
+
 		if (options.opt_level != CompileOptions::O0)
 		{
 			const auto llvm_opt_level = options.to_llvm_opt_level();
@@ -110,7 +77,7 @@ namespace slljit
 			auto LLVM_FAM  = FunctionAnalysisManager();
 			auto LLVM_CGAM = CGSCCAnalysisManager();
 			auto LLVM_MAM  = ModuleAnalysisManager();
-
+			
 			PB.registerModuleAnalyses(LLVM_MAM);
 			PB.registerCGSCCAnalyses(LLVM_CGAM);
 			PB.registerFunctionAnalyses(LLVM_FAM);
@@ -123,49 +90,47 @@ namespace slljit
 			LLVM_MPM.run(*m_local_context.LLVM_Module, LLVM_MAM);
 		}
 
-		//for (auto& it : m_local_context.LLVM_Module->functions())
-		//{
-		//	m_local_context.LLVM_FPM->run(it, *m_local_context.LLVM_FAM);
-		//}
-
-#if _DEBUG
-		fprintf(stderr, "\n; PostOptimization:\n");
-		m_local_context.LLVM_Module->dump();
-
-		// ASSEMBLY
-		std::string outStr;
+		if (bDumpIR)
 		{
-			/*	auto& TM = m_context.shllJIT->;
-			 llvm::legacy::PassManager pm;
-
-			 llvm::raw_string_ostream stream(outStr);
-
-			 llvm::buffer_ostream pstream(stream);
-
-			 TM.addPassesToEmitFile(pm, pstream, nullptr,
-
-			     llvm::CodeGenFileType::CGFT_AssemblyFile);
-
-			 pm.run(*m_local_context.LLVM_Module.get());*/
+			fprintf(stderr, "\n; PostOptimization:\n");
+			m_local_context.LLVM_Module->dump();
 		}
 
-		//	fprintf(stderr, "; Assembly:\n%s", outStr.c_str());
-#endif
+		// ASSEMBLY
+		//std::string outStr;
+		//{
+		//	/*	auto& TM = m_context.shllJIT->;
+		//	 llvm::legacy::PassManager pm;
+
+		//	 llvm::raw_string_ostream stream(outStr);
+
+		//	 llvm::buffer_ostream pstream(stream);
+
+		//	 TM.addPassesToEmitFile(pm, pstream, nullptr,
+
+		//	     llvm::CodeGenFileType::CGFT_AssemblyFile);
+
+		//	 pm.run(*m_local_context.LLVM_Module.get());*/
+		//}
+
+		////	fprintf(stderr, "; Assembly:\n%s", outStr.c_str());
+
 		auto RT = m_local_context.JD.getDefaultResourceTracker();
 
 		auto TSM = ThreadSafeModule(std::move(m_local_context.LLVM_Module), std::move(m_local_context.LLVM_Context));
 
 		Error err = m_context.shllJIT->addModule(std::move(TSM), RT);
-
 		if (err)
 		{
 			return err;
 		}
 
 #if _DEBUG
-
-		fprintf(stderr, "; JDlib:\n");
-		m_local_context.JD.dump(dbgs());
+		if (bDumpIR)
+		{
+			fprintf(stderr, "\n; JDlib:\n");
+			m_local_context.JD.dump(dbgs());
+		}
 #endif
 
 		return Error::success();

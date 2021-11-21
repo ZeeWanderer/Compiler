@@ -44,17 +44,17 @@ namespace slljit
 		}
 	}
 
-	std::pair<list<unique_ptr<PrototypeAST>>, list<unique_ptr<FunctionAST>>> Parser::get_ast()
+	std::pair<list<unique_ptr<PrototypeAST>>, list<unique_ptr<FunctionAST>>> Parser::take_ast()
 	{
 		return std::pair{std::move(PrototypeAST_list), std::move(FunctionAST_list)};
 	}
 
-	std::list<std::unique_ptr<FunctionAST>> Parser::get_function_ast()
+	std::list<std::unique_ptr<FunctionAST>> Parser::take_function_ast()
 	{
 		return std::move(FunctionAST_list);
 	}
 
-	std::list<std::unique_ptr<PrototypeAST>> Parser::get_prototype_ast()
+	std::list<std::unique_ptr<PrototypeAST>> Parser::take_prototype_ast()
 	{
 		return std::move(PrototypeAST_list);
 	}

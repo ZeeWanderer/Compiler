@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "Context.h"
+#include "Layout.h"
 
 namespace slljit
 {
@@ -33,8 +34,8 @@ namespace slljit
 		shllJIT = ExitOnError()(ShaderJIT::Create());
 	}
 
-	LocalContext::LocalContext(Context& m_context)
-	    : JD(m_context.shllJIT->create_new_JITDylib())
+	LocalContext::LocalContext(Context& m_context, Layout layout)
+	    : JD(m_context.shllJIT->create_new_JITDylib()), layout(layout)
 	{
 		BinopPrecedence = {{'=', 2}, {'<', 10}, {'>', 10}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40}};
 

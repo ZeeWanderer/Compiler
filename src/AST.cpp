@@ -483,28 +483,64 @@ namespace slljit
 
 	Expected<Value*> PrototypeAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
-		// Make the function type:  double(double,double) etc.
-		std::vector<Type*> Doubles;
-		Doubles.reserve(ArgTypes.size());
+		const auto is_main = isMain();
 
-		for (auto arg_type : ArgTypes)
+		// Make the function type:  double(double,double) etc.
+		std::vector<Type*> Arguments;
+
+		if (is_main)
 		{
-			const auto llvm_arg_type = get_llvm_type(arg_type, m_local_context);
-			Doubles.emplace_back(llvm_arg_type);
+			Arguments.reserve(1);
+
+			std::vector<Type*> StructMembers; // layout structure
+			StructMembers.reserve(m_local_context.layout.globals.size());
+
+			// Insert variable globals
+			for (auto& global : m_local_context.layout.globals)
+			{
+				Type* type_ = get_llvm_type(TypeID(global.type), m_local_context);
+				StructMembers.emplace_back(type_);
+			}
+
+			auto loader_struct_type = StructType::create(*m_local_context.LLVM_Context, StructMembers, "layout__");
+			Arguments.emplace_back(loader_struct_type->getPointerTo());
+
+			if (Arguments.size() != 1)
+			{
+				return make_error<CompileError>("Expected 1 argument for 'main', instead found: "s + to_string(Arguments.size()));
+			}
+		}
+		else
+		{
+			Arguments.reserve(ArgTypes.size());
+
+			for (auto arg_type : ArgTypes)
+			{
+				const auto llvm_arg_type = get_llvm_type(arg_type, m_local_context);
+				Arguments.emplace_back(llvm_arg_type);
+			}
 		}
 
 		const auto FnRetTyID     = this->ret_type_;
 		const auto llvm_ret_type = get_llvm_type(FnRetTyID, m_local_context);
-		FunctionType* FT         = FunctionType::get(llvm_ret_type, Doubles, false);
+		FunctionType* FT         = FunctionType::get(llvm_ret_type, Arguments, false);
 
-		const auto linkage_type = isMain() ? Function::ExternalLinkage : Function::LinkageTypes::PrivateLinkage;
+		const auto linkage_type = is_main ? Function::ExternalLinkage : Function::LinkageTypes::PrivateLinkage;
 
-		Function* F = Function::Create(FT, Function::ExternalLinkage, Name, m_local_context.LLVM_Module.get());
+		Function* F = Function::Create(FT, linkage_type, Name, m_local_context.LLVM_Module.get());
 
-		// Set names for all arguments.
-		unsigned Idx = 0;
-		for (auto& Arg : F->args())
-			Arg.setName(Args[Idx++]);
+		if (!is_main) // set argument names only for non main functions
+		{
+			// Set names for all arguments.
+			unsigned Idx = 0;
+			for (auto& Arg : F->args())
+				Arg.setName(Args[Idx++]);
+		}
+		else
+		{
+			auto arg = F->arg_begin();
+			arg->setName("data_ptr");
+		}
 
 		return F;
 	}
@@ -521,7 +557,7 @@ namespace slljit
 
 	bool PrototypeAST::isMain() const
 	{
-		return Name == "nain";
+		return Name == "main";
 	}
 
 	bool PrototypeAST::match(string name /*, std::vector<TypeID> ArgTypes*/) const
@@ -567,22 +603,50 @@ namespace slljit
 		if (Proto.isBinaryOp())
 			m_local_context.BinopPrecedence[Proto.getOperatorName()] = Proto.getBinaryPrecedence();
 
-		// Create a new basic block to start insertion into.
-		BasicBlock* BB = BasicBlock::Create(*m_local_context.LLVM_Context, "entry", *TheFunction);
-		m_local_context.LLVM_Builder->SetInsertPoint(BB);
+		const auto is_main = isMain();
 
-		// Record the function arguments in the NamedValues map.
-		m_local_context.NamedValues.clear();
-		for (auto& Arg : (*TheFunction)->args())
+		if (is_main)
 		{
-			// Create an alloca for this variable.
-			AllocaInst* Alloca = CreateEntryBlockAlloca(*TheFunction, Arg.getName(), Arg.getType(), m_context, m_local_context);
+			auto loader_struct_type = StructType::getTypeByName(*m_local_context.LLVM_Context, "layout__");
 
-			// Store the initial value into the alloca.
-			m_local_context.LLVM_Builder->CreateStore(&Arg, Alloca);
+			// Set names for all arguments.
+			auto data_pointer = (*TheFunction)->arg_begin();
 
-			// Add arguments to variable symbol table.
-			m_local_context.NamedValues[std::string(Arg.getName())] = Alloca;
+			// Create a new basic block to start insertion into.
+			BasicBlock* BB = BasicBlock::Create(*m_local_context.LLVM_Context, "entry", *TheFunction);
+			m_local_context.LLVM_Builder->SetInsertPoint(BB);
+
+			std::vector<Value*> indices{m_local_context.LLVM_Builder->getInt32(0), m_local_context.LLVM_Builder->getInt32(0)};
+			uint32_t idx = 0;
+			// Load offsets into variable globals
+			for (auto& global : m_local_context.layout.globals)
+			{
+				auto g_var = m_local_context.LLVM_Module->getGlobalVariable(global.name);
+				Value* gep = m_local_context.LLVM_Builder->CreateGEP(loader_struct_type, data_pointer, indices);
+				m_local_context.LLVM_Builder->CreateStore(gep, g_var);
+				idx++;
+				indices[1] = m_local_context.LLVM_Builder->getInt32(idx);
+			}
+		}
+		else
+		{
+			// Create a new basic block to start insertion into.
+			BasicBlock* BB = BasicBlock::Create(*m_local_context.LLVM_Context, "entry", *TheFunction);
+			m_local_context.LLVM_Builder->SetInsertPoint(BB);
+
+			// Record the function arguments in the NamedValues map.
+			m_local_context.NamedValues.clear();
+			for (auto& Arg : (*TheFunction)->args())
+			{
+				// Create an alloca for this variable.
+				AllocaInst* Alloca = CreateEntryBlockAlloca(*TheFunction, Arg.getName(), Arg.getType(), m_context, m_local_context);
+
+				// Store the initial value into the alloca.
+				m_local_context.LLVM_Builder->CreateStore(&Arg, Alloca);
+
+				// Add arguments to variable symbol table.
+				m_local_context.NamedValues[std::string(Arg.getName())] = Alloca;
+			}
 		}
 
 		for (auto& expression : Body)

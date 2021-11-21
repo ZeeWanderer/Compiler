@@ -77,60 +77,47 @@ std::string hexStr(unsigned char* data, int len)
 
 struct Data
 {
-	int64_t iter;
+	double iter;
 	double start_0;
 	double start_1;
 };
+
+const std::string source_code = R"(
+double main()
+{
+	double left = start_0;
+	double right = start_1;
+	for(double idx = 0; idx < iter - 1.0; idx = idx + 1)
+	{
+		double tmp = right + left;
+		left = right;
+		right = tmp;
+	}
+	return right;
+}
+)";
+
+//double tmp = right;
+//right      = right + left;
+//left       = tmp;
 
 int main(int argc, char** argv)
 {
 
 	Context m_context;
-	Program<Data, uint64_t> m_program(m_context);
+
 	Layout m_layout;
-	m_layout.addMember("N", ::Kint64, offsetof(Data, iter));
+	m_layout.addMember("iter", ::Kdouble, offsetof(Data, iter));
 	m_layout.addConsatant("v", 5.0, ::Kdouble);
 	m_layout.addConsatant("vi", 14.0, ::Kint64);
-	//	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
-	//	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
+	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
+	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
 	//	m_layout.addConsatant("v", 5, ::Kdouble);
 
-	const std::string source_code = R"(
-
-	extern double printd(double X);
-
-	uint64 test(uint64 x)
-	{
-		return x+1;
-	}
-
-	uint64 main()
-	{
-		uint64 test = N;
-		uint64 left = 0;
-		uint64 right = 1;
-
-		uint64 test = test(right);
-		bool test_0 = false;
-
-		if(N < 2)
-		{
-			return N;
-		}
-
-		for(uint64 idx = 0; idx < N - 1; idx = idx + 1)
-		{
-			uint64 tmp = right + left;
-			left = right;
-			right = tmp;
-		}
-
-		return right;
-	}
-)";
+	Program<Data, double> m_program(m_context, m_layout, source_code);
 
 	auto begin = std::chrono::steady_clock::now();
-	auto err   = m_program.compile(source_code, m_layout);
+	auto err   = m_program.compile({slljit::CompileOptions::O2});
 	if (err)
 	{
 		logAllUnhandledErrors(std::move(err), errs());
@@ -143,16 +130,26 @@ int main(int argc, char** argv)
 
 	std::cout << "sync 1 compile_time = " << compile_time.count() << "[ms]" << std::endl;
 
-	Data data{5, 10.0, 10.0};
+	Data data{1000.0, 0, 1/*, 10.0, 10.0*/};
 
 	begin       = std::chrono::steady_clock::now();
 	auto retval = m_program.run(&data);
 	end         = std::chrono::steady_clock::now();
 
-	const auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+	auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
 	std::cout << "retval = " << retval << std::endl;
-	std::cout << "run_time = " << run_time.count() << "[ns]" << std::endl;
+	std::cout << "run_time 1 = " << run_time.count() << "[ns]" << std::endl;
+
+	begin = std::chrono::steady_clock::now();
+	for (uint64_t idx = 0; idx < 1000; idx++)
+	{
+		auto retval = m_program.run(&data);
+	}
+	end = std::chrono::steady_clock::now();
+
+	run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+	std::cout << "run_time 1000 = " << run_time.count() << "[ns]" << std::endl;
 
 	const auto hw_c = std::thread::hardware_concurrency();
 	std::cout << "CPUtm: " << hw_c / 2 << "C" << hw_c << "T" << std::endl;
@@ -162,11 +159,10 @@ int main(int argc, char** argv)
 #endif
 
 	{
-		auto lambda = [&source_code, &m_layout]()
+		auto lambda = [&m_context, &m_layout]()
 		{
-			Context m_context;
-			Program<Data, uint64_t> m_program(m_context);
-			auto err = m_program.compile(source_code, m_layout);
+			Program<Data, uint64_t> m_program(m_context, m_layout, source_code);
+			auto err = m_program.compile();
 			if (err)
 				return;
 		};

@@ -60,19 +60,22 @@ namespace slljit
 		void set_variables(Layout& context);
 
 		/**
-		 * Get parsed AST.
+		 * Take posession of parsed AST.
+		 * @return Moved pair of lists of prototypes and function AST expressions.
 		 */
-		std::pair<list<unique_ptr<PrototypeAST>>, list<unique_ptr<FunctionAST>>> get_ast();
+		std::pair<list<unique_ptr<PrototypeAST>>, list<unique_ptr<FunctionAST>>> take_ast();
 
 		/**
-		 * Get functions AST.
+		 * Take posession of functions AST.
+		 * @return Moved list of functions AST
 		 */
-		std::list<std::unique_ptr<FunctionAST>> get_function_ast();
+		std::list<std::unique_ptr<FunctionAST>> take_function_ast();
 
 		/**
-		 * Get function prototypes AST.
+		 * Take posession of function prototypes AST.
+		 * @return Moved list of function prototypes AST.
 		 */
-		std::list<std::unique_ptr<PrototypeAST>> get_prototype_ast();
+		std::list<std::unique_ptr<PrototypeAST>> take_prototype_ast();
 
 		/**
 		 * Parse the sources.

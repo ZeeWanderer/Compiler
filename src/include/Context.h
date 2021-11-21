@@ -10,6 +10,7 @@
 
 #include "JIT.h"
 #include "AST.h"
+#include "Layout.h"
 
 namespace slljit
 {
@@ -49,10 +50,12 @@ namespace slljit
 		std::map<char, int> BinopPrecedence;
 
 		JITDylib& JD;
+
+		Layout layout;
 		//	VModuleKey module_key;
 
 	public:
-		LocalContext(Context& m_context);
+		LocalContext(Context& m_context, Layout layout);
 
 		//	void set_key(VModuleKey module_key);
 

@@ -288,8 +288,7 @@ namespace slljit
 	public:
 		PrototypeAST(TypeID ret_type_, const std::string& Name, std::vector<TypeID> ArgTypes, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
 		    : ExprAST(functionTyID), ret_type_(ret_type_), ArgTypes(std::move(ArgTypes)), Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec)
-		{
-		}
+		{}
 
 		// Cast to Function*
 		Expected<Value*> codegen(Context& m_context, LocalContext& m_local_context) override;

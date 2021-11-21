@@ -8,7 +8,6 @@
 
 #include "Context.h"
 #include "AST.h"
-#include "Layout.h"
 #include "Options.h"
 
 namespace slljit
@@ -20,7 +19,7 @@ namespace slljit
 	class CodeGen
 	{
 	public:
-		void compile_layout(Context& m_context, LocalContext& m_local_context, Layout& m_layout);
-		Error compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context, CompileOptions& options);
+		void compile_layout(Context& m_context, LocalContext& m_local_context);
+		Error compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context, CompileOptions& options, bool bDumpIR = false);
 	};
 }; // namespace slljit

@@ -48,16 +48,18 @@ namespace slljit
 		this->type = type;
 	}
 
-	Constant* ConstantGlobalDefinition::get_init_val(LocalContext& ctx)
+	Constant* ConstantGlobalDefinition::get_init_val(LocalContext& ctx) const
 	{
+		auto& context = ctx.getContext();
+
 		switch (type)
 		{
 		case slljit::Kdouble:
-			return ConstantFP::get(*ctx.LLVM_Context, APFloat(valueD));
+			return ConstantFP::get(context, APFloat(valueD));
 		case slljit::Kint64:
-			return ConstantInt::get(*ctx.LLVM_Context, APInt(64, valueSI64, true));
+			return ConstantInt::get(context, APInt(64, valueSI64, true));
 		case slljit::Kuint64:
-			return ConstantInt::get(*ctx.LLVM_Context, APInt(64, valueUI64, false));
+			return ConstantInt::get(context, APInt(64, valueUI64, false));
 		default: break;
 		}
 	}

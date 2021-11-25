@@ -17,25 +17,30 @@ namespace slljit
 
 	void CodeGen::compile_layout(Context& m_context, LocalContext& m_local_context)
 	{
+		auto& context      = m_local_context.getContext();
+		auto& builder      = m_local_context.getBuilder();
+		auto& module       = m_local_context.getModule();
+		const auto& layout = m_local_context.getLayout();
+
 		// Insert variable globals
 		// Globals contain pointers to layout members, init with nullptr
-		for (auto& global : m_local_context.layout.globals)
+		for (auto& global : layout.globals)
 		{
 			Type* type_ = get_llvm_type(TypeID(global.type), m_local_context);
-			m_local_context.LLVM_Module->getOrInsertGlobal(global.name, type_->getPointerTo());
-			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.name);
+			module.getOrInsertGlobal(global.name, type_->getPointerTo());
+			GlobalVariable* gVar = module.getNamedGlobal(global.name);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
 			gVar->setInitializer(ConstantPointerNull::get(type_->getPointerTo()));
 		}
 
 		// Insert constant globals
-		for (auto& global : m_local_context.layout.constant_globals)
+		for (auto& global : layout.constant_globals)
 		{
 			Type* type_      = get_llvm_type(TypeID(global.second.type), m_local_context);
 			Constant* init_c = global.second.get_init_val(m_local_context);
 
-			m_local_context.LLVM_Module->getOrInsertGlobal(global.first, type_);
-			GlobalVariable* gVar = m_local_context.LLVM_Module->getNamedGlobal(global.first);
+			module.getOrInsertGlobal(global.first, type_);
+			GlobalVariable* gVar = module.getNamedGlobal(global.first);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
 			gVar->setInitializer(init_c);
 			gVar->setConstant(true);
@@ -64,8 +69,9 @@ namespace slljit
 
 		if (bDumpIR)
 		{
+			fprintf(stderr, "----IR_START----\n");
 			fprintf(stderr, "; PreOptimization:\n");
-			m_local_context.LLVM_Module->dump();
+			m_local_context.getModule().dump();
 		}
 
 		if (options.opt_level != CompileOptions::O0)
@@ -77,7 +83,7 @@ namespace slljit
 			auto LLVM_FAM  = FunctionAnalysisManager();
 			auto LLVM_CGAM = CGSCCAnalysisManager();
 			auto LLVM_MAM  = ModuleAnalysisManager();
-			
+
 			PB.registerModuleAnalyses(LLVM_MAM);
 			PB.registerCGSCCAnalyses(LLVM_CGAM);
 			PB.registerFunctionAnalyses(LLVM_FAM);
@@ -87,13 +93,13 @@ namespace slljit
 			auto LLVM_FPM = FunctionPassManager(PB.buildFunctionSimplificationPipeline(llvm_opt_level, ThinOrFullLTOPhase::None));
 			auto LLVM_MPM = ModulePassManager(PB.buildPerModuleDefaultPipeline(llvm_opt_level, true));
 
-			LLVM_MPM.run(*m_local_context.LLVM_Module, LLVM_MAM);
+			LLVM_MPM.run(m_local_context.getModule(), LLVM_MAM);
 		}
 
 		if (bDumpIR)
 		{
 			fprintf(stderr, "\n; PostOptimization:\n");
-			m_local_context.LLVM_Module->dump();
+			m_local_context.getModule().dump();
 		}
 
 		// ASSEMBLY
@@ -115,9 +121,9 @@ namespace slljit
 
 		////	fprintf(stderr, "; Assembly:\n%s", outStr.c_str());
 
-		auto RT = m_local_context.JD.getDefaultResourceTracker();
+		auto RT = m_local_context.getJITDylib().getDefaultResourceTracker();
 
-		auto TSM = ThreadSafeModule(std::move(m_local_context.LLVM_Module), std::move(m_local_context.LLVM_Context));
+		auto TSM = ThreadSafeModule(std::move(m_local_context.takeModule()), std::move(m_local_context.takeContext()));
 
 		Error err = m_context.shllJIT->addModule(std::move(TSM), RT);
 		if (err)
@@ -125,13 +131,12 @@ namespace slljit
 			return err;
 		}
 
-#if _DEBUG
 		if (bDumpIR)
 		{
-			fprintf(stderr, "\n; JDlib:\n");
-			m_local_context.JD.dump(dbgs());
+			fprintf(stderr, "\n; JITDylib:\n");
+			m_local_context.getJITDylib().dump(dbgs());
+			fprintf(stderr, "\n-----IR_END-----\n");
 		}
-#endif
 
 		return Error::success();
 	}

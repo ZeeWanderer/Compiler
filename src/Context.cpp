@@ -31,7 +31,7 @@ namespace slljit
 	Context::Context()
 	{
 		init__();
-		shllJIT = ExitOnError()(ShaderJIT::Create());
+		shllJIT = cantFail(ShaderJIT::Create());
 	}
 
 	LocalContext::LocalContext(Context& m_context, Layout layout)

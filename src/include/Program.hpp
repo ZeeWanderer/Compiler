@@ -63,7 +63,7 @@ namespace slljit
 			Parser m_parser(m_local_context.BinopPrecedence);
 			CodeGen m_codegen;
 			m_parser.set_source(m_body);
-			m_parser.set_variables(m_local_context.layout);
+			m_parser.set_variables(m_local_context.getLayout());
 
 			auto err_ = m_parser.parse();
 			if (err_)
@@ -76,7 +76,7 @@ namespace slljit
 			if (compile_err)
 				return compile_err;
 
-			auto symbol = m_context.shllJIT->lookup("main", m_local_context.JD);
+			auto symbol = m_context.shllJIT->lookup("main", m_local_context.getJITDylib());
 			if (!symbol)
 				return symbol.takeError();
 

@@ -30,7 +30,7 @@ namespace slljit
 		getNextToken();
 	}
 
-	void Parser::set_variables(Layout& context)
+	void Parser::set_variables(const Layout& context)
 	{
 		push_scope();
 		for (auto& gl : context.globals)

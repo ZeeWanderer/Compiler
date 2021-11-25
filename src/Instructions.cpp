@@ -7,21 +7,23 @@ namespace slljit
 {
 	void CreateExplictCast(Value*& val, TypeID fromTy, TypeID toTy, LocalContext& ctx)
 	{
+		auto& builder = ctx.getBuilder();
+
 		if (fromTy != toTy)
 		{
 			const auto llvm_type = get_llvm_type(toTy, ctx);
 			if (isIntegerTy(fromTy) && isIntegerTy(toTy))
 			{
-				val = ctx.LLVM_Builder->CreateIntCast(val, llvm_type, isSigned(toTy));
+				val = builder.CreateIntCast(val, llvm_type, isSigned(toTy));
 			}
 			else if (isFloatingPointTy(fromTy) && isFloatingPointTy(toTy))
 			{
-				val = ctx.LLVM_Builder->CreateFPCast(val, llvm_type);
+				val = builder.CreateFPCast(val, llvm_type);
 			}
 			else
 			{
 				auto castOP = fp_int_cast_op_lookup.at({fromTy, toTy});
-				val         = ctx.LLVM_Builder->CreateCast(castOP, val, llvm_type);
+				val         = builder.CreateCast(castOP, val, llvm_type);
 			}
 		}
 	}
@@ -41,19 +43,23 @@ namespace slljit
 
 	Value* CtreateCMP(CmpPredicate pred, Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
+		auto& builder = ctx.getBuilder();
+
 		const auto llvm_pred = pred_to_llvm_pred.at(type_).at(pred);
-		return ctx.LLVM_Builder->CreateCmp(llvm_pred, lhs, rhs, Name);
+		return builder.CreateCmp(llvm_pred, lhs, rhs, Name);
 	}
 
 	Value* CreateAdd(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
+		auto& builder = ctx.getBuilder();
+
 		if (isFloatingPointTy(type_))
 		{
-			return ctx.LLVM_Builder->CreateFAdd(lhs, rhs, Name);
+			return builder.CreateFAdd(lhs, rhs, Name);
 		}
 		else if (isIntegerTy(type_))
 		{
-			return ctx.LLVM_Builder->CreateAdd(lhs, rhs, Name);
+			return builder.CreateAdd(lhs, rhs, Name);
 		}
 		else
 		{
@@ -63,13 +69,15 @@ namespace slljit
 
 	Value* CreateSub(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
+		auto& builder = ctx.getBuilder();
+
 		if (isFloatingPointTy(type_))
 		{
-			return ctx.LLVM_Builder->CreateFSub(lhs, rhs, Name);
+			return builder.CreateFSub(lhs, rhs, Name);
 		}
 		else if (isIntegerTy(type_))
 		{
-			return ctx.LLVM_Builder->CreateSub(lhs, rhs, Name);
+			return builder.CreateSub(lhs, rhs, Name);
 		}
 		else
 		{
@@ -79,13 +87,15 @@ namespace slljit
 
 	Value* CreateMul(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
+		auto& builder = ctx.getBuilder();
+
 		if (isFloatingPointTy(type_))
 		{
-			return ctx.LLVM_Builder->CreateFMul(lhs, rhs, Name);
+			return builder.CreateFMul(lhs, rhs, Name);
 		}
 		else if (isIntegerTy(type_))
 		{
-			return ctx.LLVM_Builder->CreateMul(lhs, rhs, Name);
+			return builder.CreateMul(lhs, rhs, Name);
 		}
 		else
 		{
@@ -95,19 +105,21 @@ namespace slljit
 
 	Value* CreateDiv(Value* lhs, Value* rhs, TypeID type_, LocalContext& ctx, const llvm::Twine& Name)
 	{
+		auto& builder = ctx.getBuilder();
+
 		if (isFloatingPointTy(type_))
 		{
-			return ctx.LLVM_Builder->CreateFDiv(lhs, rhs, Name);
+			return builder.CreateFDiv(lhs, rhs, Name);
 		}
 		else if (isIntegerTy(type_))
 		{
 			if (isSigned(type_))
 			{
-				return ctx.LLVM_Builder->CreateSDiv(lhs, rhs, Name);
+				return builder.CreateSDiv(lhs, rhs, Name);
 			}
 			else
 			{
-				return ctx.LLVM_Builder->CreateUDiv(lhs, rhs, Name);
+				return builder.CreateUDiv(lhs, rhs, Name);
 			}
 		}
 		else

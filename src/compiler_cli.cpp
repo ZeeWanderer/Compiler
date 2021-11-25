@@ -108,21 +108,22 @@ int main(int argc, char** argv)
 
 	Layout m_layout;
 	m_layout.addMember("iter", ::Kdouble, offsetof(Data, iter));
-	m_layout.addConsatant("v", 5.0, ::Kdouble);
-	m_layout.addConsatant("vi", 14.0, ::Kint64);
+	//m_layout.addConsatant("v", 5.0, ::Kdouble);
+	//m_layout.addConsatant("vi", 14.0, ::Kint64);
 	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
 	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
-	//	m_layout.addConsatant("v", 5, ::Kdouble);
 
 	Program<Data, double> m_program(m_context, m_layout, source_code);
 
 	auto begin = std::chrono::steady_clock::now();
-	auto err   = m_program.compile({slljit::CompileOptions::O2});
+	auto err   = m_program.compile(CompileOptions(), true);
 	if (err)
 	{
 		logAllUnhandledErrors(std::move(err), errs());
 		return 0;
 	}
+
+	std::cout << std::endl; // new line after IR dump
 
 	auto end = std::chrono::steady_clock::now();
 
@@ -130,7 +131,7 @@ int main(int argc, char** argv)
 
 	std::cout << "sync 1 compile_time = " << compile_time.count() << "[ms]" << std::endl;
 
-	Data data{1000.0, 0, 1/*, 10.0, 10.0*/};
+	Data data{1000.0, 0, 1 /*, 10.0, 10.0*/};
 
 	begin       = std::chrono::steady_clock::now();
 	auto retval = m_program.run(&data);

@@ -42,7 +42,7 @@ namespace slljit
 		template <BasicType T>
 		ConstantGlobalDefinition(T value, LayoutVarTypes type);
 
-		Constant* get_init_val(LocalContext& ctx);
+		Constant* get_init_val(LocalContext& ctx) const;
 	};
 
 	class Layout

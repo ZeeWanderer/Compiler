@@ -8,16 +8,18 @@ namespace slljit
 
 	llvm::Type* get_llvm_type(TypeID TyID, LocalContext& m_local_context)
 	{
+		auto& builder = m_local_context.getBuilder();
+
 		switch (TyID)
 		{
 		case slljit::doubleTyID:
-			return m_local_context.LLVM_Builder->getDoubleTy();
+			return builder.getDoubleTy();
 		case slljit::int64TyID:
-			return m_local_context.LLVM_Builder->getInt64Ty();
+			return builder.getInt64Ty();
 		case slljit::uint64TyID:
-			return m_local_context.LLVM_Builder->getInt64Ty();
+			return builder.getInt64Ty();
 		case slljit::boolTyID:
-			return m_local_context.LLVM_Builder->getInt1Ty();
+			return builder.getInt1Ty();
 		case slljit::functionTyID:
 			break;
 		case slljit::none:

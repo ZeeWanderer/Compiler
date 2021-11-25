@@ -57,7 +57,7 @@ namespace slljit
 		 * Sets Layout variables to use as a reference during parse process.
 		 * @param context Reference to Layout to take variables from.
 		 */
-		void set_variables(Layout& context);
+		void set_variables(const Layout& context);
 
 		/**
 		 * Take posession of parsed AST.

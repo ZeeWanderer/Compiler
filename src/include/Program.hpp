@@ -55,7 +55,8 @@ namespace slljit
 		 * @param bDumpIR If ir should be dumped to console during compilation. Not threadsafe.
 		 * @return Error object, requires to be checked.
 		 */
-		[[nodiscard]] Error compile(CompileOptions options = CompileOptions(), bool bDumpIR = false)
+		[[nodiscard]]
+		Error compile(CompileOptions options = CompileOptions(), bool bDumpIR = false)
 		{
 			if (main_func != nullptr)
 				return Error::success();
@@ -63,18 +64,20 @@ namespace slljit
 			Parser m_parser(m_local_context.BinopPrecedence);
 			CodeGen m_codegen;
 			m_parser.set_source(m_body);
-			m_parser.set_variables(m_local_context.getLayout());
+			auto parse_err_0 = m_parser.set_variables(m_local_context.getLayout());
+			if (parse_err_0)
+				return move(parse_err_0);
 
-			auto err_ = m_parser.parse();
-			if (err_)
-				return err_;
+			auto parse_err_1 = m_parser.parse();
+			if (parse_err_1)
+				return move(parse_err_1);
 
 			// TMP CODEGEN KERNEL
 			auto [prototypes, functions] = m_parser.take_ast();
 			m_codegen.compile_layout(m_context, m_local_context);
 			auto compile_err = m_codegen.compile(std::move(prototypes), std::move(functions), m_context, m_local_context, options, bDumpIR);
 			if (compile_err)
-				return compile_err;
+				return move(compile_err);
 
 			auto symbol = m_context.shllJIT->lookup("main", m_local_context.getJITDylib());
 			if (!symbol)

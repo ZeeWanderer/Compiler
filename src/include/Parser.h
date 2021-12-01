@@ -34,7 +34,7 @@ namespace slljit
 
 		PrototypeAST* current_function_proto = nullptr;
 
-		vector<map<string, TypeID>> scope_list;
+		list<map<string, TypeID>> scope_list;
 
 		Tokenizer m_tokenizer;
 
@@ -57,7 +57,8 @@ namespace slljit
 		 * Sets Layout variables to use as a reference during parse process.
 		 * @param context Reference to Layout to take variables from.
 		 */
-		void set_variables(const Layout& context);
+		[[nodiscard]]
+		Error set_variables(const Layout& context);
 
 		/**
 		 * Take posession of parsed AST.
@@ -81,6 +82,7 @@ namespace slljit
 		 * Parse the sources.
 		 * @return Error object, requires to be ckecked.
 		 */
+		[[nodiscard]]
 		Error parse();
 
 		/**
@@ -96,13 +98,15 @@ namespace slljit
 		/**
 		 * Puch variable into current scope.
 		 */
-		void push_var_into_scope(string name, TypeID type);
+		[[nodiscard]]
+		Error push_var_into_scope(string name, TypeID type);
 
 		/**
 		 * Find variable in scopes by name.
 		 * Searches scopes retroactively.
 		 * @return Either error or variable type, requires to be cheked.
 		 */
+		[[nodiscard]]
 		Expected<TypeID> find_var_in_scope(string name);
 
 		/**
@@ -122,24 +126,30 @@ namespace slljit
 		int GetTokPrecedence();
 
 		/// numberexpr ::= number
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseLiteralExpr();
 
 		/// parenexpr ::= '(' expression ')'
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseParenExpr();
 
 		/// identifierexpr
 		///   ::= identifier
 		///   ::= identifier '(' expression* ')'
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseIdentifierExpr();
 
 		/// ifexpr ::= 'if' expression 'then' expression 'else' expression
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseIfExpr();
 
 		/// forexpr ::= 'for' identifier '=' expr ',' expr (',' expr)? 'in' expression
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseForExpr();
 
 		/// varexpr ::= 'g_var' identifier ('=' expression)?
 		//                    (',' identifier ('=' expression)?)* 'in' expression
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseVarExpr();
 
 		/// primary
@@ -149,40 +159,52 @@ namespace slljit
 		///   ::= ifexpr
 		///   ::= forexpr
 		///   ::= varexpr
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParsePrimary();
 
 		/// unary
 		///   ::= primary
 		///   ::= '!' unary
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseUnary();
 
 		/// binoprhs
 		///   ::= ('+' unary)*
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseBinOpRHS(int ExprPrec, std::unique_ptr<ExprAST> LHS);
 
 		/// expression
 		///   ::= unary binoprhs
 		///
+		[[nodiscard]]
 		Expected<std::unique_ptr<ExprAST>> ParseExpression();
+
+		[[nodiscard]]
 		Expected<ExprList> ParseExpressionList();
 
 		/// prototype
 		///   ::= id '(' id* ')'
 		///   ::= binary LETTER number? (id, id)
 		///   ::= unary LETTER (id)
+		[[nodiscard]]
 		Expected<std::unique_ptr<PrototypeAST>> ParsePrototype();
 
 		/// definition ::= 'def' prototype expression
+		[[nodiscard]]
 		Expected<std::unique_ptr<FunctionAST>> ParseTopLevelTypedExpression();
 
 		/// external ::= 'extern' prototype
+		[[nodiscard]]
 		Expected<std::unique_ptr<PrototypeAST>> ParseExtern();
 
+		[[nodiscard]]
 		Error HandleTypedExpression();
 
+		[[nodiscard]]
 		Error HandleExtern();
 
 		/// top ::= definition | external | expression | ';'
+		[[nodiscard]]
 		Error MainLoop();
 	};
 }; // namespace slljit

@@ -87,12 +87,14 @@ double main()
 {
 	double left = start_0;
 	double right = start_1;
-	for(double idx = 0; idx < iter - 1.0; idx = idx + 1)
+
+	for(double idx = 0; idx < iter - 1.0; idx = idx + 1.0)
 	{
 		double tmp = right + left;
 		left = right;
 		right = tmp;
 	}
+
 	return right;
 }
 )";
@@ -115,7 +117,6 @@ int main(int argc, char** argv)
 
 	Program<Data, double> m_program(m_context, m_layout, source_code);
 
-	auto begin = std::chrono::steady_clock::now();
 	auto err   = m_program.compile(CompileOptions(), true);
 	if (err)
 	{
@@ -125,40 +126,15 @@ int main(int argc, char** argv)
 
 	std::cout << std::endl; // new line after IR dump
 
-	auto end = std::chrono::steady_clock::now();
-
-	auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-
-	std::cout << "sync 1 compile_time = " << compile_time.count() << "[ms]" << std::endl;
-
 	Data data{1000.0, 0, 1 /*, 10.0, 10.0*/};
 
-	begin       = std::chrono::steady_clock::now();
 	auto retval = m_program.run(&data);
-	end         = std::chrono::steady_clock::now();
-
-	auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
 
 	std::cout << "retval = " << retval << std::endl;
-	std::cout << "run_time 1 = " << run_time.count() << "[ns]" << std::endl;
-
-	begin = std::chrono::steady_clock::now();
-	for (uint64_t idx = 0; idx < 1000; idx++)
-	{
-		auto retval = m_program.run(&data);
-	}
-	end = std::chrono::steady_clock::now();
-
-	run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
-	std::cout << "run_time 1000 = " << run_time.count() << "[ns]" << std::endl;
-
-	const auto hw_c = std::thread::hardware_concurrency();
-	std::cout << "CPUtm: " << hw_c / 2 << "C" << hw_c << "T" << std::endl;
 
 #if _DEBUG
 	return 0; // cut off testing code
 #endif
-
 	{
 		auto lambda = [&m_context, &m_layout]()
 		{
@@ -167,6 +143,35 @@ int main(int argc, char** argv)
 			if (err)
 				return;
 		};
+
+		auto begin = std::chrono::steady_clock::now();
+		lambda();
+		auto end = std::chrono::steady_clock::now();
+		std::cout << std::endl; // new line after IR dump
+
+		auto compile_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+		std::cout << "sync 1 compile_time = " << compile_time.count() << "[ms]" << std::endl;
+
+		begin       = std::chrono::steady_clock::now();
+		auto retval = m_program.run(&data);
+		end         = std::chrono::steady_clock::now();
+
+		auto run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+		std::cout << "run_time 1 = " << run_time.count() << "[ns]" << std::endl;
+
+		begin = std::chrono::steady_clock::now();
+		for (uint64_t idx = 0; idx < 1000; idx++)
+		{
+			auto retval = m_program.run(&data);
+		}
+		end = std::chrono::steady_clock::now();
+
+		run_time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin);
+		std::cout << "run_time 1000 = " << run_time.count() << "[ns]" << std::endl;
+
+		const auto hw_c = std::thread::hardware_concurrency();
+		std::cout << "CPUtm: " << hw_c / 2 << "C" << hw_c << "T" << std::endl;
 
 		begin = std::chrono::steady_clock::now();
 		for (int idx = 0; idx < 100; idx++)

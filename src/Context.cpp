@@ -45,5 +45,7 @@ namespace slljit
 		// Open a new module.
 		LLVM_Module = std::make_unique<Module>("shader_module", *LLVM_Context);
 		LLVM_Module->setDataLayout(m_context.shllJIT->getDataLayout());
+
+		push_scope();
 	}
 }; // namespace slljit

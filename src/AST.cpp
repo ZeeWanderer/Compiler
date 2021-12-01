@@ -53,15 +53,16 @@ namespace slljit
 			}
 
 			// Look up variable.
-			AllocaInst* Variable = m_local_context.NamedValues[LHSE->getName()];
+
+			auto Variable = m_local_context.find_var_in_scope(LHSE->getName());
 			if (!Variable)
-				return make_error<CompileError>("unknown variable name: "s + LHSE->getName());
+				return Variable.takeError();
 			auto VariableTy = LHSE->getType();
 
 			// if types differ cast val to variable type
 			CreateExplictCast(Val, ValTy, VariableTy, m_local_context);
 
-			builder.CreateStore(Val, Variable);
+			builder.CreateStore(Val, *Variable);
 			return Val;
 		}
 
@@ -191,12 +192,12 @@ namespace slljit
 			}
 		}
 
-		auto V = m_local_context.NamedValues[Name];
+		auto V = m_local_context.find_var_in_scope(Name);
 		if (!V)
-			return make_error<CompileError>("unknown variable name: "s + Name);
+			return V.takeError();
 
 		// Load the value.
-		return builder.CreateLoad(V->getAllocatedType(), V, Name.c_str());
+		return builder.CreateLoad((*V)->getAllocatedType(), *V, Name.c_str());
 	}
 
 	Expected<Value*> UnaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
@@ -263,25 +264,19 @@ namespace slljit
 		auto& builder = m_local_context.getBuilder();
 
 		Function* TheFunction = builder.GetInsertBlock()->getParent();
+		m_local_context.push_scope();
 
 		// Create blocks for the then and else cases.  Insert the 'then' block at the
 		// end of the function.
-		//	BasicBlock* cont_calcBB = BasicBlock::Create(*m_local_context.LLVM_Context, "cond_calc", TheFunction);
 		BasicBlock* IfBB    = BasicBlock::Create(context, "if", TheFunction);
 		BasicBlock* ElseBB  = BasicBlock::Create(context, "else", TheFunction);
 		BasicBlock* MergeBB = BasicBlock::Create(context, "after", TheFunction);
-
-		//	m_local_context.LLVM_Builder->CreateBr(cont_calcBB);
-
-		//	m_local_context.LLVM_Builder->SetInsertPoint(cont_calcBB);
 
 		auto CondV = Cond->codegen(m_context, m_local_context);
 		if (!CondV)
 			return CondV.takeError();
 
-		//TODO: verify
 		CreateExplictCast(*CondV, Cond->getType(), boolTyID, m_local_context);
-		//CondV = m_local_context.LLVM_Builder->CreateFCmpONE(CondV, ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0)), "ifcond");
 
 		builder.CreateCondBr(*CondV, IfBB, ElseBB);
 
@@ -289,6 +284,7 @@ namespace slljit
 		builder.SetInsertPoint(IfBB);
 
 		{
+			m_local_context.push_scope();
 			bool isTerminated = false;
 			for (auto& then_expr : Then)
 			{
@@ -305,15 +301,14 @@ namespace slljit
 
 			if (!isTerminated)
 				builder.CreateBr(MergeBB);
+			m_local_context.pop_scope();
 		}
-		// Codegen of 'Then' can change the current block, update IfBB for the PHI.
-		//	IfBB = m_local_context.LLVM_Builder->GetInsertBlock();
 
 		// Emit else block.
-		//	TheFunction->getBasicBlockList().push_back(ElseBB);
 		builder.SetInsertPoint(ElseBB);
 
 		{
+			m_local_context.push_scope();
 			bool isTerminated = false;
 			for (auto& else_expr : Else)
 			{
@@ -328,22 +323,14 @@ namespace slljit
 				}
 			}
 
-			//	Value* ElseV = Else->codegen(m_context, m_local_context);
-			//	if (!ElseV)
-			//	return nullptr;
 			if (!isTerminated)
 				builder.CreateBr(MergeBB);
+			m_local_context.pop_scope();
 		}
-		// Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-		//	ElseBB = m_local_context.LLVM_Builder->GetInsertBlock();
 
-		// Emit merge block.
-		//	TheFunction->getBasicBlockList().push_back(MergeBB);
 		builder.SetInsertPoint(MergeBB);
-		//	PHINode* PN = LLVM_Builder.CreatePHI(Type::getDoubleTy(LLVM_Context), 2, "iftmp");
 
-		//	PN->addIncoming(ThenV, IfBB);
-		//	PN->addIncoming(ElseV, ElseBB);
+		m_local_context.pop_scope();
 		return *CondV;
 	}
 
@@ -373,6 +360,7 @@ namespace slljit
 		auto& builder = m_local_context.getBuilder();
 
 		Function* TheFunction = builder.GetInsertBlock()->getParent();
+		m_local_context.push_scope();
 
 		// generate init variable
 		if (VarInit)
@@ -431,6 +419,7 @@ namespace slljit
 		builder.SetInsertPoint(AfterBB);
 		//	LLVM_Builder.CreateFCmpONE(ConstantFP::get(LLVM_Context, APFloat(0.0)), ConstantFP::get(LLVM_Context, APFloat(0.0)), "dmm");
 
+		m_local_context.pop_scope();
 		// for expr always returns 0.0.
 		return ConstantFP::get(context, APFloat(0.0));
 	}
@@ -440,8 +429,6 @@ namespace slljit
 		auto& context = m_local_context.getContext();
 		auto& builder = m_local_context.getBuilder();
 
-		std::vector<AllocaInst*> OldBindings;
-
 		Function* TheFunction = builder.GetInsertBlock()->getParent();
 
 		// Register all variables and emit their initializer.
@@ -450,6 +437,11 @@ namespace slljit
 		{
 			const std::string& VarName = VarNames[i].first;
 			ExprAST* Init              = VarNames[i].second.get();
+
+			if (m_local_context.check_curent_scope(VarName))
+			{
+				return make_error<CompileError>("variable `"s + VarName + "` redefinition");
+			}
 
 			// Emit the initializer before adding the variable to scope, this prevents
 			// the initializer from referencing the variable itself, and permits stuff
@@ -479,12 +471,7 @@ namespace slljit
 			AllocaInst* Alloca = CreateEntryBlockAlloca(TheFunction, VarName, type_, m_context, m_local_context);
 			retval             = builder.CreateStore(InitVal, Alloca);
 
-			// Remember the old variable binding so that we can restore the binding when
-			// we unrecurse.
-			OldBindings.push_back(m_local_context.NamedValues[VarName]);
-
-			// Remember this binding.
-			m_local_context.NamedValues[VarName] = Alloca;
+			m_local_context.push_var_into_scope(VarName, Alloca);
 		}
 
 		// Codegen the body, now that all vars are in scope.
@@ -621,6 +608,8 @@ namespace slljit
 
 	Expected<Value*> FunctionAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
+		m_local_context.push_scope();
+
 		auto& context = m_local_context.getContext();
 		auto& builder = m_local_context.getBuilder();
 		auto& module  = m_local_context.getModule();
@@ -666,7 +655,6 @@ namespace slljit
 			builder.SetInsertPoint(BB);
 
 			// Record the function arguments in the NamedValues map.
-			m_local_context.NamedValues.clear();
 			for (auto& Arg : (*TheFunction)->args())
 			{
 				// Create an alloca for this variable.
@@ -676,7 +664,7 @@ namespace slljit
 				builder.CreateStore(&Arg, Alloca);
 
 				// Add arguments to variable symbol table.
-				m_local_context.NamedValues[std::string(Arg.getName())] = Alloca;
+				m_local_context.push_var_into_scope(Arg.getName().str(), Alloca);
 			}
 		}
 
@@ -696,6 +684,7 @@ namespace slljit
 
 		verifyFunction(**TheFunction);
 
+		m_local_context.pop_scope();
 		return *TheFunction;
 		//}
 	}

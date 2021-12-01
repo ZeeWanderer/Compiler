@@ -30,18 +30,24 @@ namespace slljit
 		getNextToken();
 	}
 
-	void Parser::set_variables(const Layout& context)
+	Error Parser::set_variables(const Layout& context)
 	{
 		push_scope();
 		for (auto& gl : context.globals)
 		{
-			push_var_into_scope(gl.name, TypeID(gl.type));
+			auto err = push_var_into_scope(gl.name, TypeID(gl.type));
+			if (err)
+				return std::move(err);
 		}
 
 		for (auto& gl : context.constant_globals)
 		{
-			push_var_into_scope(gl.first, TypeID(gl.second.type));
+			auto err = push_var_into_scope(gl.first, TypeID(gl.second.type));
+			if (err)
+				return std::move(err);
 		}
+
+		return Error::success();
 	}
 
 	std::pair<list<unique_ptr<PrototypeAST>>, list<unique_ptr<FunctionAST>>> Parser::take_ast()
@@ -74,10 +80,20 @@ namespace slljit
 		scope_list.emplace_back(map<string, TypeID>());
 	}
 
-	inline void Parser::push_var_into_scope(string name, TypeID type)
+	inline Error Parser::push_var_into_scope(string name, TypeID type)
 	{
+		auto it  = scope_list.rbegin();
+		auto it_ = it->find(name);
+		const auto exists = it_ != it->end();
+		if (exists)
+		{
+			return make_error<ParserError>("variable `" + name + "` redefinition in the currrent scope", m_tokenizer.get_source_location());
+		}
+
 		auto& current_scope = scope_list.back();
 		current_scope[name] = type;
+
+		return Error::success();
 	}
 
 	void Parser::set_current_function_scope(PrototypeAST* p)
@@ -92,7 +108,7 @@ namespace slljit
 
 	inline Expected<TypeID> Parser::find_var_in_scope(string name)
 	{
-		for (auto it = scope_list.rbegin(); it < scope_list.rend(); it++)
+		for (auto it = scope_list.rbegin(); it != scope_list.rend(); it++)
 		{
 			auto it_ = it->find(name);
 			if (it_ != it->end())
@@ -376,7 +392,9 @@ namespace slljit
 				VarNames.push_back(std::make_pair(Name, nullptr));
 			}
 
-			push_var_into_scope(Name, VarTypeID);
+			auto err = push_var_into_scope(Name, VarTypeID);
+			if (err)
+				return std::move(err);
 
 			// End of g_var list, exit loop.
 			if (CurTok != ',')
@@ -604,7 +622,9 @@ namespace slljit
 			if (getNextToken() == tok_identifier)
 			{
 				const auto arg_name = m_tokenizer.get_identifier();
-				push_var_into_scope(arg_name, ArgTypeID);
+				auto err = push_var_into_scope(arg_name, ArgTypeID);
+				if (err)
+					return std::move(err);
 				ArgNames.push_back(arg_name);
 			}
 			else

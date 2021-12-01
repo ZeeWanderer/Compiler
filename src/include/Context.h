@@ -1,4 +1,7 @@
 ﻿#pragma once
+#include <vector>
+#include <list>
+#include <map>
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/IRBuilder.h"
@@ -11,6 +14,7 @@
 #include "JIT.h"
 #include "AST.h"
 #include "Layout.h"
+#include "Error.h"
 
 namespace slljit
 {
@@ -48,13 +52,51 @@ namespace slljit
 
 		Layout layout;
 
+		list<map<string, AllocaInst*>> scope_list;
+
 	public:
 		// TODO: make this private
 		std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos; // TODO: figure aout a better way
 		std::map<char, int> BinopPrecedence;
-		std::map<std::string, AllocaInst*> NamedValues; // TODO: make this scoped like in Parser
 
 		LocalContext(Context& m_context, Layout layout);
+
+		inline void pop_scope()
+		{
+			scope_list.pop_back();
+		}
+
+		inline void push_scope()
+		{
+			scope_list.emplace_back(map<string, AllocaInst*>());
+		}
+
+		inline void push_var_into_scope(string name, AllocaInst* alloca)
+		{
+			auto& current_scope = scope_list.back();
+			current_scope[name] = alloca;
+		}
+
+		[[nodiscard]]
+		inline Expected<AllocaInst*> find_var_in_scope(string name)
+		{
+			for (auto it = scope_list.rbegin(); it != scope_list.rend(); it++)
+			{
+				auto it_ = it->find(name);
+				if (it_ != it->end())
+				{
+					return it_->second;
+				}
+			}
+			return make_error<CompileError>("unknown variable name: "s + name);
+		}
+
+		inline bool check_curent_scope(string name)
+		{
+			auto it  = scope_list.rbegin();
+			auto it_ = it->find(name);
+			return it_ != it->end();
+		}
 
 		inline LLVMContext& getContext()
 		{

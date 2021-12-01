@@ -1,4 +1,6 @@
-﻿#include "llvm/Support/Error.h"
+﻿#pragma once
+
+#include "llvm/Support/Error.h"
 #include <system_error>
 
 namespace slljit

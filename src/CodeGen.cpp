@@ -46,6 +46,7 @@ namespace slljit
 			gVar->setConstant(true);
 		}
 	}
+
 	Error CodeGen::compile(std::list<std::unique_ptr<PrototypeAST>> prototypes, std::list<std::unique_ptr<FunctionAST>> functions, Context& m_context, LocalContext& m_local_context, CompileOptions& options, bool bDumpIR)
 	{
 		for (auto it = prototypes.begin(); it != prototypes.end(); ++it)

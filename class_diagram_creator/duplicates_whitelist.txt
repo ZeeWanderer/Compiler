@@ -1,0 +1,18 @@
+// basic types
+int
+char
+
+// typedefs
+size_t
+
+// classes
+string
+error_code
+
+// template classes
+set\<
+map\<
+list\<
+pair\<
+vector\<
+unique_ptr\<

@@ -120,3 +120,7 @@ yaml-cpp.pc
 
 # ssl certificate
 cacert.pem
+
+# custom
+mw_all_classes/*
+*.rar

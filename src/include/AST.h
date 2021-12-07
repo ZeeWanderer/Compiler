@@ -20,6 +20,11 @@ namespace slljit
 	// Abstract Syntax Tree (aka Parse Tree)
 	//===----------------------------------------------------------------------===//
 
+	/** @defgroup AST The AST Class Group
+	 *  This is the group of classes representing AST
+	 *  @{
+	 */
+
 	/// Base class for all expression nodes.
 	class ExprAST
 	{
@@ -342,4 +347,7 @@ namespace slljit
 	/// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 	/// the function.  This is used for mutable variables etc.
 	static AllocaInst* CreateEntryBlockAlloca(Function* TheFunction, const StringRef VarName, TypeID VarType, Context& m_context, LocalContext& m_local_context);
+
+	/** @} */ // end of AST
+
 }; // namespace slljit

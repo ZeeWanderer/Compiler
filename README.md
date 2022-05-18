@@ -3,4 +3,4 @@ A very crude embeddable compiler using LLVM made as part of bachelor's work and 
 
 ## Usage
 
-[example](/src/compiler_cli.cpp)
+[example](https://github.com/ZeeWanderer/Compiler/blob/master/src/compiler_cli.cpp)

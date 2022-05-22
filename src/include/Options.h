@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/OptimizationLevel.h"
 
 namespace slljit
 {
@@ -39,6 +40,6 @@ namespace slljit
 		OptLevel opt_level = O3;
 
 	private:
-		PassBuilder::OptimizationLevel to_llvm_opt_level();
+		llvm::OptimizationLevel to_llvm_opt_level();
 	};
 }; // namespace slljit

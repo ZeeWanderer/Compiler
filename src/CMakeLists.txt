@@ -84,6 +84,8 @@ target_include_directories(slljit PUBLIC "./include")
 target_link_libraries(slljit ${LLVM_TARGETS})
 add_dependencies(slljit ${LLVM_TARGETS})
 
+find_package(Taskflow CONFIG)
+
 set(CompilerCLI_SRC
 		include/pch.h
 		pch.cpp
@@ -92,7 +94,7 @@ set(CompilerCLI_SRC
 add_executable (CompilerCLI ${CompilerCLI_SRC})
 target_include_directories(CompilerCLI PUBLIC ${LLVM_INCLUDE_DIRS})
 target_include_directories(CompilerCLI PUBLIC "./include")
-target_link_libraries(CompilerCLI slljit)
+target_link_libraries(CompilerCLI PUBLIC slljit PRIVATE Taskflow::Taskflow)
 add_dependencies(CompilerCLI slljit)
 
 set(LLVM_K_TEST_SRC

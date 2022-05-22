@@ -3,6 +3,6 @@
   "name": "compiler",
   "version-semver": "0.0.0",
   "dependencies": [
-    "cpp-taskflow"
+    "taskflow"
   ]
 }

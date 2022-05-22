@@ -122,5 +122,6 @@ yaml-cpp.pc
 cacert.pem
 
 # custom
+vcpkg_installed/*
 mw_all_classes/*
 *.rar

@@ -19,6 +19,5 @@ var searchData=
   ['ismain_16',['isMain',['../classslljit_1_1_prototype_a_s_t.html#a57ae69a40a3c07e0d75caa0a13f51240',1,'slljit::PrototypeAST::isMain()'],['../classslljit_1_1_function_a_s_t.html#a3166dcba3acf7e27425e3baad9938d5b',1,'slljit::FunctionAST::isMain()']]],
   ['isoperator_17',['IsOperator',['../classslljit_1_1_prototype_a_s_t.html#a99685b1907a1d2927c355a82d6a7d859',1,'slljit::PrototypeAST']]],
   ['issigned_18',['isSigned',['../namespaceslljit.html#a4a92e29091af0a9f6c8d1499beccc810',1,'slljit']]],
-  ['isunaryop_19',['isUnaryOp',['../classslljit_1_1_prototype_a_s_t.html#adade8d7279de8de62553d0a377c3c398',1,'slljit::PrototypeAST']]],
-  ['iter_20',['iter',['../struct_data.html#afcab79fc0c3e8e71eecd972919f19520',1,'Data']]]
+  ['isunaryop_19',['isUnaryOp',['../classslljit_1_1_prototype_a_s_t.html#adade8d7279de8de62553d0a377c3c398',1,'slljit::PrototypeAST']]]
 ];

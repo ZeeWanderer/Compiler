@@ -1,15 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classslljit_1_1_expr_a_s_t.html" title="Base class for all expression nodes." alt="" coords="5,284,111,311"/>
-<area shape="rect" id="node2" href="$classslljit_1_1_binary_expr_a_s_t.html" title="Expression class for a binary operator." alt="" coords="163,5,306,32"/>
-<area shape="rect" id="node3" href="$classslljit_1_1_call_expr_a_s_t.html" title="Expression class for function calls." alt="" coords="171,56,298,83"/>
-<area shape="rect" id="node4" href="$classslljit_1_1_for_expr_a_s_t.html" title="Expression class for for/in." alt="" coords="173,107,297,133"/>
-<area shape="rect" id="node5" href="$classslljit_1_1_function_a_s_t.html" title="This class represents a function definition itself." alt="" coords="171,157,299,184"/>
-<area shape="rect" id="node6" href="$classslljit_1_1_if_expr_a_s_t.html" title="Expression class for if/else." alt="" coords="179,208,290,235"/>
-<area shape="rect" id="node7" href="$classslljit_1_1_no_op_a_s_t.html" title="Expression class to represent NoOp." alt="" coords="179,259,290,285"/>
-<area shape="rect" id="node8" href="$classslljit_1_1_number_expr_a_s_t.html" title="Expression class for numeric literals like &quot;1.0&quot;." alt="" coords="159,309,310,336"/>
-<area shape="rect" id="node9" href="$classslljit_1_1_prototype_a_s_t.html" title="Expression class for function prototypes." alt="" coords="167,360,302,387"/>
-<area shape="rect" id="node10" href="$classslljit_1_1_return_expr_a_s_t.html" title="Expression class for a unary operator." alt="" coords="163,411,306,437"/>
-<area shape="rect" id="node11" href="$classslljit_1_1_unary_expr_a_s_t.html" title="Expression class for a unary operator." alt="" coords="165,461,304,488"/>
-<area shape="rect" id="node12" href="$classslljit_1_1_var_expr_a_s_t.html" title="Expression class for g_var/in." alt="" coords="172,512,297,539"/>
-<area shape="rect" id="node13" href="$classslljit_1_1_variable_expr_a_s_t.html" title="Expression class for referencing a variable, like &quot;a&quot;." alt="" coords="159,563,311,589"/>
+<area shape="rect" id="node1" href="$structslljit_1_1_global_definition.html" title=" " alt="" coords="5,5,148,32"/>
 </map>

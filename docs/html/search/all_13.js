@@ -7,7 +7,7 @@ var searchData=
   ['takemodule_4',['takeModule',['../classslljit_1_1_local_context.html#afe472965af157e400b47e19d4ffa53f6',1,'slljit::LocalContext']]],
   ['the_20ast_20class_20group_5',['The AST Class Group',['../group___a_s_t.html',1,'']]],
   ['then_6',['Then',['../classslljit_1_1_if_expr_a_s_t.html#aec8c282978a966a754a2b54a0319c07c',1,'slljit::IfExprAST']]],
-  ['to_5fllvm_5fopt_5flevel_7',['to_llvm_opt_level',['../structslljit_1_1_compile_options.html#a42fd4fa986d61e146a8929517a9c1b1e',1,'slljit::CompileOptions']]],
+  ['to_5fllvm_5fopt_5flevel_7',['to_llvm_opt_level',['../structslljit_1_1_compile_options.html#a3377105fc272e8dab91d6241e52da510',1,'slljit::CompileOptions']]],
   ['tok_5felse_8',['tok_else',['../namespaceslljit.html#a8959c3213c73a2a38a880d936ba3dbb1a52886c1e1d8e59ec97653f87e825575c',1,'slljit']]],
   ['tok_5feof_9',['tok_eof',['../namespaceslljit.html#a8959c3213c73a2a38a880d936ba3dbb1af111610c66a0734376079cbd2b8cd594',1,'slljit']]],
   ['tok_5fextern_10',['tok_extern',['../namespaceslljit.html#a8959c3213c73a2a38a880d936ba3dbb1a8d90bb6b62426c012fdd69150fe41c93',1,'slljit']]],

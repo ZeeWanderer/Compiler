@@ -65,34 +65,34 @@
 <path fill="none" stroke="midnightblue" d="M441.79,-301C433.35,-301 424.67,-301 416.23,-301"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="441.92,-304.5 451.92,-301 441.92,-297.5 441.92,-304.5"/>
 </g>
-<!-- Node7 -->
-<g id="node7" class="node">
-<title>Node7</title>
-<g id="a_node7"><a xlink:href="group___a_s_t.html#gabcb945acbdbc0f45bff6200e7b52fea7" target="_top" xlink:title=" ">
+<!-- Node6 -->
+<g id="node6" class="node">
+<title>Node6</title>
+<g id="a_node6"><a xlink:href="group___a_s_t.html#gabcb945acbdbc0f45bff6200e7b52fea7" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="298,-237 298,-267 414,-267 414,-237 298,-237"/>
 <text text-anchor="start" x="306" y="-255" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::CreateEntryBlock</text>
 <text text-anchor="middle" x="356" y="-244" font-family="Helvetica,sans-Serif" font-size="10.00">Alloca</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node7 -->
-<g id="edge6" class="edge">
-<title>Node1&#45;&gt;Node7</title>
+<!-- Node1&#45;&gt;Node6 -->
+<g id="edge5" class="edge">
+<title>Node1&#45;&gt;Node6</title>
 <path fill="none" stroke="midnightblue" d="M462.99,-288.19C444.01,-281.71 420.86,-273.8 401.04,-267.04"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="461.9,-291.52 472.49,-291.44 464.16,-284.89 461.9,-291.52"/>
 </g>
-<!-- Node8 -->
-<g id="node8" class="node">
-<title>Node8</title>
-<g id="a_node8"><a xlink:href="namespaceslljit.html#a35fd5437fe4da3972add655696b4ba1e" target="_top" xlink:title="Creates explict cast.">
+<!-- Node7 -->
+<g id="node7" class="node">
+<title>Node7</title>
+<g id="a_node7"><a xlink:href="namespaceslljit.html#a35fd5437fe4da3972add655696b4ba1e" target="_top" xlink:title="Creates explict cast.">
 <polygon fill="none" stroke="black" points="296.5,-166.5 296.5,-185.5 415.5,-185.5 415.5,-166.5 296.5,-166.5"/>
 <text text-anchor="middle" x="356" y="-173.5" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::CreateExplictCast</text>
 </a>
 </g>
 </g>
-<!-- Node1&#45;&gt;Node8 -->
-<g id="edge7" class="edge">
-<title>Node1&#45;&gt;Node8</title>
+<!-- Node1&#45;&gt;Node7 -->
+<g id="edge6" class="edge">
+<title>Node1&#45;&gt;Node7</title>
 <path fill="none" stroke="midnightblue" d="M481.48,-284.43C451.12,-257.99 392.68,-207.08 368.21,-185.76"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="479.4,-287.26 489.24,-291.19 484,-281.98 479.4,-287.26"/>
 </g>
@@ -111,137 +111,122 @@
 <path fill="none" stroke="midnightblue" d="M285.44,-315.6C272.66,-318.28 259.63,-321.01 247.8,-323.49"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="286.53,-318.94 295.6,-313.46 285.1,-312.09 286.53,-318.94"/>
 </g>
-<!-- Node6 -->
-<g id="node6" class="node">
-<title>Node6</title>
-<g id="a_node6"><a xlink:href="compiler__cli_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="34.5,-323.5 34.5,-342.5 72.5,-342.5 72.5,-323.5 34.5,-323.5"/>
-<text text-anchor="middle" x="53.5" y="-330.5" font-family="Helvetica,sans-Serif" font-size="10.00">main</text>
-</a>
-</g>
-</g>
-<!-- Node5&#45;&gt;Node6 -->
-<g id="edge5" class="edge">
-<title>Node5&#45;&gt;Node6</title>
-<path fill="none" stroke="midnightblue" d="M133.11,-333C110.95,-333 88.1,-333 72.79,-333"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="133.22,-336.5 143.22,-333 133.22,-329.5 133.22,-336.5"/>
-</g>
-<!-- Node9 -->
-<g id="node9" class="node">
-<title>Node9</title>
-<g id="a_node9"><a xlink:href="classslljit_1_1_return_expr_a_s_t.html#ae28b151f271dec2884361a2d46556f87" target="_top" xlink:title=" ">
+<!-- Node8 -->
+<g id="node8" class="node">
+<title>Node8</title>
+<g id="a_node8"><a xlink:href="classslljit_1_1_return_expr_a_s_t.html#ae28b151f271dec2884361a2d46556f87" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="148,-274 148,-304 255,-304 255,-274 148,-274"/>
 <text text-anchor="start" x="156" y="-292" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::ReturnExprAST</text>
 <text text-anchor="middle" x="201.5" y="-281" font-family="Helvetica,sans-Serif" font-size="10.00">::codegen</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node9 -->
-<g id="edge8" class="edge">
-<title>Node8&#45;&gt;Node9</title>
+<!-- Node7&#45;&gt;Node8 -->
+<g id="edge7" class="edge">
+<title>Node7&#45;&gt;Node8</title>
 <path fill="none" stroke="midnightblue" d="M336.48,-192.38C310.01,-215.76 264.1,-256.2 260,-259 252.1,-264.4 243.1,-269.52 234.62,-273.95"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="338.82,-194.98 344,-185.73 334.19,-189.73 338.82,-194.98"/>
+</g>
+<!-- Node9 -->
+<g id="node9" class="node">
+<title>Node9</title>
+<g id="a_node9"><a xlink:href="classslljit_1_1_binary_expr_a_s_t.html#a4e15cb62043e37beafadeb7faf94d7ba" target="_top" xlink:title=" ">
+<polygon fill="none" stroke="black" points="0,-112 0,-142 107,-142 107,-112 0,-112"/>
+<text text-anchor="start" x="8" y="-130" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::BinaryExprAST</text>
+<text text-anchor="middle" x="53.5" y="-119" font-family="Helvetica,sans-Serif" font-size="10.00">::codegen</text>
+</a>
+</g>
+</g>
+<!-- Node7&#45;&gt;Node9 -->
+<g id="edge8" class="edge">
+<title>Node7&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M333.16,-191.45C314.66,-203.52 286.93,-219.35 260,-226 209.52,-238.47 190.47,-247.24 143,-226 104.49,-208.77 75.81,-165.59 62.59,-142.36"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="335.35,-194.19 341.69,-185.71 331.44,-188.38 335.35,-194.19"/>
 </g>
 <!-- Node10 -->
 <g id="node10" class="node">
 <title>Node10</title>
-<g id="a_node10"><a xlink:href="classslljit_1_1_binary_expr_a_s_t.html#a4e15cb62043e37beafadeb7faf94d7ba" target="_top" xlink:title=" ">
-<polygon fill="none" stroke="black" points="0,-113 0,-143 107,-143 107,-113 0,-113"/>
-<text text-anchor="start" x="8" y="-131" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::BinaryExprAST</text>
-<text text-anchor="middle" x="53.5" y="-120" font-family="Helvetica,sans-Serif" font-size="10.00">::codegen</text>
-</a>
-</g>
-</g>
-<!-- Node8&#45;&gt;Node10 -->
-<g id="edge9" class="edge">
-<title>Node8&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M333.16,-191.45C314.66,-203.52 286.93,-219.35 260,-226 209.52,-238.47 190.52,-247.12 143,-226 104.66,-208.96 75.91,-166.21 62.63,-143.21"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="335.35,-194.19 341.69,-185.71 331.44,-188.38 335.35,-194.19"/>
-</g>
-<!-- Node11 -->
-<g id="node11" class="node">
-<title>Node11</title>
-<g id="a_node11"><a xlink:href="classslljit_1_1_call_expr_a_s_t.html#a0d196837649e9e0205fafddf2cd95068" target="_top" xlink:title=" ">
+<g id="a_node10"><a xlink:href="classslljit_1_1_call_expr_a_s_t.html#a0d196837649e9e0205fafddf2cd95068" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="154,-186 154,-216 249,-216 249,-186 154,-186"/>
 <text text-anchor="start" x="162" y="-204" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::CallExprAST</text>
 <text text-anchor="middle" x="201.5" y="-193" font-family="Helvetica,sans-Serif" font-size="10.00">::codegen</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node11 -->
-<g id="edge10" class="edge">
-<title>Node8&#45;&gt;Node11</title>
+<!-- Node7&#45;&gt;Node10 -->
+<g id="edge9" class="edge">
+<title>Node7&#45;&gt;Node10</title>
 <path fill="none" stroke="midnightblue" d="M286.78,-187.18C274.03,-189.27 260.97,-191.41 249.06,-193.37"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="287.61,-190.59 296.91,-185.52 286.48,-183.69 287.61,-190.59"/>
 </g>
-<!-- Node12 -->
-<g id="node12" class="node">
-<title>Node12</title>
-<g id="a_node12"><a xlink:href="classslljit_1_1_if_expr_a_s_t.html#a376bb50f865a795316ebf0710b4ac135" target="_top" xlink:title=" ">
+<!-- Node11 -->
+<g id="node11" class="node">
+<title>Node11</title>
+<g id="a_node11"><a xlink:href="classslljit_1_1_if_expr_a_s_t.html#a376bb50f865a795316ebf0710b4ac135" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="157,-137 157,-167 246,-167 246,-137 157,-137"/>
 <text text-anchor="start" x="165" y="-155" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::IfExprAST::</text>
 <text text-anchor="middle" x="201.5" y="-144" font-family="Helvetica,sans-Serif" font-size="10.00">codegen</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node12 -->
-<g id="edge11" class="edge">
-<title>Node8&#45;&gt;Node12</title>
+<!-- Node7&#45;&gt;Node11 -->
+<g id="edge10" class="edge">
+<title>Node7&#45;&gt;Node11</title>
 <path fill="none" stroke="midnightblue" d="M286.22,-165.18C272.7,-163.05 258.85,-160.87 246.42,-158.91"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="286.05,-168.69 296.48,-166.79 287.14,-161.78 286.05,-168.69"/>
 </g>
-<!-- Node13 -->
-<g id="node13" class="node">
-<title>Node13</title>
-<g id="a_node13"><a xlink:href="classslljit_1_1_for_expr_a_s_t.html#a0e8a98570a1b8c55617ee52b41922289" target="_top" xlink:title=" ">
+<!-- Node12 -->
+<g id="node12" class="node">
+<title>Node12</title>
+<g id="a_node12"><a xlink:href="classslljit_1_1_for_expr_a_s_t.html#a0e8a98570a1b8c55617ee52b41922289" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="155,-88 155,-118 248,-118 248,-88 155,-88"/>
 <text text-anchor="start" x="163" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::ForExprAST</text>
 <text text-anchor="middle" x="201.5" y="-95" font-family="Helvetica,sans-Serif" font-size="10.00">::codegen</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node13 -->
-<g id="edge12" class="edge">
-<title>Node8&#45;&gt;Node13</title>
+<!-- Node7&#45;&gt;Node12 -->
+<g id="edge11" class="edge">
+<title>Node7&#45;&gt;Node12</title>
 <path fill="none" stroke="midnightblue" d="M328.01,-161.84C309.1,-152.05 283.18,-138.88 260,-128 252.91,-124.67 245.25,-121.23 237.92,-118.02"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="326.45,-164.98 336.94,-166.48 329.68,-158.77 326.45,-164.98"/>
 </g>
-<!-- Node14 -->
-<g id="node14" class="node">
-<title>Node14</title>
-<g id="a_node14"><a xlink:href="classslljit_1_1_var_expr_a_s_t.html#a6898396b719dec46fd30ab9cc9dfb7ac" target="_top" xlink:title=" ">
+<!-- Node13 -->
+<g id="node13" class="node">
+<title>Node13</title>
+<g id="a_node13"><a xlink:href="classslljit_1_1_var_expr_a_s_t.html#a6898396b719dec46fd30ab9cc9dfb7ac" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="154.5,-39 154.5,-69 248.5,-69 248.5,-39 154.5,-39"/>
 <text text-anchor="start" x="162.5" y="-57" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::VarExprAST</text>
 <text text-anchor="middle" x="201.5" y="-46" font-family="Helvetica,sans-Serif" font-size="10.00">::codegen</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node14 -->
-<g id="edge13" class="edge">
-<title>Node8&#45;&gt;Node14</title>
-<path fill="none" stroke="midnightblue" d="M341.37,-158.4C324.25,-137.25 293.1,-101.79 260,-79 254.62,-75.3 248.6,-71.96 242.54,-69.01"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="338.65,-160.6 347.61,-166.25 344.13,-156.24 338.65,-160.6"/>
+<!-- Node7&#45;&gt;Node13 -->
+<g id="edge12" class="edge">
+<title>Node7&#45;&gt;Node13</title>
+<path fill="none" stroke="midnightblue" d="M341.72,-158.45C324.76,-137.04 293.56,-100.87 260,-78 255.17,-74.71 249.82,-71.74 244.39,-69.1"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="338.99,-160.64 347.89,-166.39 344.52,-156.35 338.99,-160.64"/>
 </g>
-<!-- Node15 -->
-<g id="node15" class="node">
-<title>Node15</title>
-<g id="a_node15"><a xlink:href="namespaceslljit.html#a998468289a7b7f80ec1b49aa930d5143" target="_top" xlink:title="Creates implict cast.">
+<!-- Node14 -->
+<g id="node14" class="node">
+<title>Node14</title>
+<g id="a_node14"><a xlink:href="namespaceslljit.html#a998468289a7b7f80ec1b49aa930d5143" target="_top" xlink:title="Creates implict cast.">
 <polygon fill="none" stroke="black" points="143,-0.5 143,-19.5 260,-19.5 260,-0.5 143,-0.5"/>
 <text text-anchor="middle" x="201.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::CreateImplictCast</text>
 </a>
 </g>
 </g>
-<!-- Node8&#45;&gt;Node15 -->
-<g id="edge14" class="edge">
-<title>Node8&#45;&gt;Node15</title>
+<!-- Node7&#45;&gt;Node14 -->
+<g id="edge13" class="edge">
+<title>Node7&#45;&gt;Node14</title>
 <path fill="none" stroke="midnightblue" d="M347.6,-156.78C334.6,-125.49 304.71,-63.56 260,-29 255.01,-25.14 249.2,-22.05 243.23,-19.57"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="344.38,-158.16 351.36,-166.13 350.88,-155.55 344.38,-158.16"/>
 </g>
-<!-- Node15&#45;&gt;Node10 -->
-<g id="edge15" class="edge">
-<title>Node15&#45;&gt;Node10</title>
-<path fill="none" stroke="midnightblue" d="M152.83,-23.51C149.4,-25.16 146.08,-26.98 143,-29 108.49,-51.62 78.97,-91.01 64.34,-112.66"/>
-<polygon fill="midnightblue" stroke="midnightblue" points="154.25,-26.71 162.08,-19.58 151.51,-20.27 154.25,-26.71"/>
+<!-- Node14&#45;&gt;Node9 -->
+<g id="edge14" class="edge">
+<title>Node14&#45;&gt;Node9</title>
+<path fill="none" stroke="midnightblue" d="M152.84,-23.53C149.41,-25.17 146.09,-26.99 143,-29 108.62,-51.41 79.05,-90.39 64.37,-111.82"/>
+<polygon fill="midnightblue" stroke="midnightblue" points="154.26,-26.73 162.1,-19.6 151.53,-20.28 154.26,-26.73"/>
 </g>
 </g>
 </svg>

@@ -9,9 +9,7 @@ var searchData=
   ['shaderjit_6',['ShaderJIT',['../classslljit_1_1_shader_j_i_t.html#ace7414822f3a4f4821c4eec5c1e52dd9',1,'slljit::ShaderJIT::ShaderJIT()'],['../classslljit_1_1_shader_j_i_t.html',1,'slljit::ShaderJIT']]],
   ['shlljit_7',['shllJIT',['../classslljit_1_1_context.html#a63be831313a814cafa39e21f23bbfefa',1,'slljit::Context']]],
   ['slljit_8',['slljit',['../namespaceslljit.html',1,'']]],
-  ['source_5fcode_9',['source_code',['../classslljit_1_1_tokenizer.html#aa289c80ab29b90c37b8bd1c71172b650',1,'slljit::Tokenizer::source_code()'],['../compiler__cli_8cpp.html#a1b3e3285e329a861438fefc7ce04734e',1,'source_code():&#160;compiler_cli.cpp']]],
+  ['source_5fcode_9',['source_code',['../classslljit_1_1_tokenizer.html#aa289c80ab29b90c37b8bd1c71172b650',1,'slljit::Tokenizer']]],
   ['source_5fidx_10',['source_idx',['../classslljit_1_1_tokenizer.html#abe78da2899eeee7202522b85d9e38744',1,'slljit::Tokenizer']]],
-  ['special_5fliterals_11',['special_literals',['../namespaceslljit.html#aa8b3f3b82a1cf16b2e54dd82150a0793',1,'slljit']]],
-  ['start_5f0_12',['start_0',['../struct_data.html#ad16c17194b98d2aaca56d0bff5d73215',1,'Data']]],
-  ['start_5f1_13',['start_1',['../struct_data.html#ad00968735d2e4132af69e94f92e691c7',1,'Data']]]
+  ['special_5fliterals_11',['special_literals',['../namespaceslljit.html#aa8b3f3b82a1cf16b2e54dd82150a0793',1,'slljit']]]
 ];

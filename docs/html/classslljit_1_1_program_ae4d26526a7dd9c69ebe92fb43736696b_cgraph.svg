@@ -199,7 +199,7 @@
 <!-- Node7 -->
 <g id="node7" class="node">
 <title>Node7</title>
-<g id="a_node7"><a xlink:href="structslljit_1_1_compile_options.html#a42fd4fa986d61e146a8929517a9c1b1e" target="_top" xlink:title=" ">
+<g id="a_node7"><a xlink:href="structslljit_1_1_compile_options.html#a3377105fc272e8dab91d6241e52da510" target="_top" xlink:title=" ">
 <polygon fill="none" stroke="black" points="311.5,-1078.16 311.5,-1108.16 420.5,-1108.16 420.5,-1078.16 311.5,-1078.16"/>
 <text text-anchor="start" x="319.5" y="-1096.16" font-family="Helvetica,sans-Serif" font-size="10.00">slljit::CompileOptions</text>
 <text text-anchor="middle" x="366" y="-1085.16" font-family="Helvetica,sans-Serif" font-size="10.00">::to_llvm_opt_level</text>

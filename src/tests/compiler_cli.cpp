@@ -83,19 +83,21 @@ struct Data
 };
 
 const std::string source_code = R"(
-double main()
+uint64 main()
 {
 	double left = start_0;
 	double right = start_1;
 
-	for(double idx = 0; idx < iter - 1.0; idx = idx + 1.0)
+	for(int64 idx = 0; idx < iter; idx = idx + 1)
 	{
 		double tmp = right + left;
 		left = right;
 		right = tmp;
 	}
 
-	return right;
+	uint64 result = right;
+
+	return result;
 }
 )";
 
@@ -115,7 +117,7 @@ int main(int argc, char** argv)
 	m_layout.addMember("start_0", ::Kdouble, offsetof(Data, start_0));
 	m_layout.addMember("start_1", ::Kdouble, offsetof(Data, start_1));
 
-	Program<Data, double> m_program(m_context, m_layout, source_code);
+	Program<Data, uint64_t> m_program(m_context, m_layout, source_code);
 
 	auto err   = m_program.compile(CompileOptions(), true);
 	if (err)
@@ -126,7 +128,7 @@ int main(int argc, char** argv)
 
 	std::cout << std::endl; // new line after IR dump
 
-	Data data{1000.0, 0, 1 /*, 10.0, 10.0*/};
+	Data data{3.0, 0, 1 /*, 10.0, 10.0*/};
 
 	auto retval = m_program.run(&data);
 

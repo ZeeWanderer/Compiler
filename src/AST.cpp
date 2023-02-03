@@ -14,7 +14,7 @@ namespace slljit
 	using namespace slljit;
 	using namespace std;
 	// type from, type to -> cast op
-	//const map<std::pair<llvm::Type::TypeID, llvm::Type::TypeID>, llvm::Instruction::CastOps> llvm_types_to_cast_op = {{{Type::DoubleTyID, Type::IntegerTyID}, Instruction::FPToSI}, {{Type::IntegerTyID, Type::DoubleTyID}, Instruction::SIToFP}};
+	// const map<std::pair<llvm::Type::TypeID, llvm::Type::TypeID>, llvm::Instruction::CastOps> llvm_types_to_cast_op = {{{Type::DoubleTyID, Type::IntegerTyID}, Instruction::FPToSI}, {{Type::IntegerTyID, Type::DoubleTyID}, Instruction::SIToFP}};
 
 	Expected<Value*> BinaryExprAST::codegen(Context& m_context, LocalContext& m_local_context)
 	{
@@ -176,19 +176,33 @@ namespace slljit
 	{
 		auto& builder = m_local_context.getBuilder();
 		auto& module  = m_local_context.getModule();
+		auto& layout  = m_local_context.getLayout();
 
 		// Look this variable up in the function.
 		GlobalVariable* gVar = module.getNamedGlobal(Name);
 		if (gVar)
 		{
+			const auto gVarValueType = gVar->getValueType();
+
 			if (gVar->isConstant())
-				return builder.CreateLoad(gVar->getValueType(), gVar, Name);
+				return builder.CreateLoad(gVarValueType, gVar, Name);
 			else
 			{
-				// TODO: load a single time
-				auto ptr     = builder.CreateLoad(gVar->getValueType(), gVar, Name);
-				auto valType = static_cast<PointerType*>(gVar->getValueType())->getElementType();
-				return builder.CreateLoad(valType, ptr, Name);
+				auto g_result = m_local_context.find_global(gVar->getName().str());
+				[[likely]] if (g_result)
+				{
+					// TODO: load a single time
+					auto ptr     = builder.CreateLoad(gVarValueType, gVar, Name);
+					auto valType = get_llvm_type(TypeID(g_result->type), m_local_context);
+					// auto valType_ = static_cast<PointerType*>(gVar->getValueType())->getElementType();
+					return builder.CreateLoad(valType, ptr, Name);
+				}
+				else
+				{
+					consumeError(g_result.takeError());
+
+					return builder.CreateLoad(gVarValueType, gVar, Name);
+				}
 			}
 		}
 
@@ -390,10 +404,10 @@ namespace slljit
 			if (!condVal)
 				return condVal.takeError();
 
-			//TODO: verify
+			// TODO: verify
 			CreateExplictCast(*condVal, Cond->getType(), boolTyID, m_local_context);
 			// Convert condition to a bool by comparing non-equal to 0.0.
-			//condVal = m_local_context.LLVM_Builder->CreateFCmpONE(condVal, ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0)), "loopcond");
+			// condVal = m_local_context.LLVM_Builder->CreateFCmpONE(condVal, ConstantFP::get(*m_local_context.LLVM_Context, APFloat(0.0)), "loopcond");
 
 			// Insert the conditional branch into the end of LoopEndBB.
 			builder.CreateCondBr(*condVal, LoopBobyBB, AfterBB);
@@ -487,7 +501,6 @@ namespace slljit
 		return retval;
 	}
 
-	// Cast to Function*
 	// Cast to Function*
 
 	Expected<Value*> PrototypeAST::codegen(Context& m_context, LocalContext& m_local_context)

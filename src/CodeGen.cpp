@@ -26,11 +26,14 @@ namespace slljit
 		// Globals contain pointers to layout members, init with nullptr
 		for (auto& global : layout.globals)
 		{
-			Type* type_ = get_llvm_type(TypeID(global.type), m_local_context);
-			module.getOrInsertGlobal(global.name, type_->getPointerTo());
+			Type* type_         = get_llvm_type(TypeID(global.type), m_local_context);
+			PointerType* ptype_ = PointerType::get(type_, 0);
+
+			module.getOrInsertGlobal(global.name, ptype_);
+
 			GlobalVariable* gVar = module.getNamedGlobal(global.name);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
-			gVar->setInitializer(ConstantPointerNull::get(type_->getPointerTo()));
+			gVar->setInitializer(ConstantPointerNull::get(ptype_));
 		}
 
 		// Insert constant globals
@@ -40,6 +43,7 @@ namespace slljit
 			Constant* init_c = global.second.get_init_val(m_local_context);
 
 			module.getOrInsertGlobal(global.first, type_);
+
 			GlobalVariable* gVar = module.getNamedGlobal(global.first);
 			gVar->setLinkage(GlobalValue::ExternalLinkage);
 			gVar->setInitializer(init_c);
@@ -104,7 +108,7 @@ namespace slljit
 		}
 
 		// ASSEMBLY
-		//std::string outStr;
+		// std::string outStr;
 		//{
 		//	/*	auto& TM = m_context.shllJIT->;
 		//	 llvm::legacy::PassManager pm;

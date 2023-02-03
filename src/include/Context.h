@@ -77,8 +77,21 @@ namespace slljit
 			current_scope[name] = alloca;
 		}
 
-		[[nodiscard]]
-		inline Expected<AllocaInst*> find_var_in_scope(string name)
+		[[nodiscard]] inline Expected<GlobalDefinition> find_global(string name)
+		{
+			auto is_even = [name](GlobalDefinition i)
+			{ return i.name == name; };
+
+			const auto it = std::find_if(layout.globals.begin(), layout.globals.end(), is_even);
+			if (it != layout.globals.end())
+			{
+				return *it;
+			}
+
+			return make_error<CompileError>("unknown global variable name: "s + name);
+		}
+
+		[[nodiscard]] inline Expected<AllocaInst*> find_var_in_scope(string name)
 		{
 			for (auto it = scope_list.rbegin(); it != scope_list.rend(); it++)
 			{

@@ -12,7 +12,7 @@ namespace slljit
 	void init__()
 	{
 		static bool b_once                             = true;
-		static constexpr const char* llvm_cl_options[] = {"./slljit", "-extra-vectorizer-passes", "-openmp-opt-disable", "-enable-unroll-and-jam", "-enable-simple-loop-unswitch"};
+		static constexpr const char* llvm_cl_options[] = {"./slljit", "-extra-vectorizer-passes", "-openmp-opt-disable", "-enable-unroll-and-jam", "-enable-nontrivial-unswitch"};
 		static constexpr auto llvm_cl_options_c        = sizeof(llvm_cl_options) / sizeof(*llvm_cl_options);
 
 		if (b_once)
